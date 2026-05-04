@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>RideFlow — Admin</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- Rate modal not needed for admin; complaint modal via inline buttons -->
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon">R</div>
+    <div><div class="sb-logo-text">RideFlow</div><div class="sb-logo-sub">Admin</div></div>
+  </div>
+  <nav class="sb-nav" id="sb-nav">
+    <a class="sb-item active" onclick="go('overview')"><span class="sb-item-icon">📊</span>Dashboard</a>
+    <a class="sb-item" onclick="go('rides')"><span class="sb-item-icon">🚗</span>Active Rides</a>
+    <div class="sb-section">Reports</div>
+    <a class="sb-item" onclick="go('revenue')"><span class="sb-item-icon">💰</span>Revenue</a>
+    <a class="sb-item" onclick="go('top-drivers')"><span class="sb-item-icon">⭐</span>Top Drivers</a>
+    <a class="sb-item" onclick="go('leaderboard')"><span class="sb-item-icon">🏆</span>Leaderboard</a>
+    <div class="sb-section">Management</div>
+    <a class="sb-item" onclick="go('complaints')"><span class="sb-item-icon">⚠️</span>Complaints</a>
+    <a class="sb-item" onclick="go('vehicles')"><span class="sb-item-icon">🚙</span>Vehicles</a>
+    <a class="sb-item" onclick="go('users')"><span class="sb-item-icon">👥</span>Users</a>
+  </nav>
+  <div class="sb-user">
+    <div class="sb-avatar">{{ user.user_name[0] }}</div>
+    <div><div class="sb-uname">{{ user.user_name }}</div><div class="sb-urole">Administrator</div></div>
+    <a href="/logout" class="sb-logout" title="Logout">⏻</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ── OVERVIEW ────────────────────────────────────────────── -->
+<section id="sec-overview">
+  <div class="page-hd between">
+    <div><div class="page-title">Dashboard</div><div class="page-sub">Platform overview</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="initOverview()">↻ Refresh</button>
+  </div>
+  <div class="stats" id="stats-row">
+    <div class="stat" style="--accent-color:var(--cyan)"><div class="stat-icon">👥</div><div class="stat-val" id="s-users">—</div><div class="stat-lbl">Total Users</div></div>
+    <div class="stat" style="--accent-color:var(--green)"><div class="stat-icon">✅</div><div class="stat-val" id="s-done">—</div><div class="stat-lbl">Completed Rides</div></div>
+    <div class="stat" style="--accent-color:var(--violet)"><div class="stat-icon">🚗</div><div class="stat-val" id="s-active">—</div><div class="stat-lbl">Active Rides</div></div>
+    <div class="stat" style="--accent-color:var(--amber)"><div class="stat-icon">💰</div><div class="stat-val" id="s-rev">—</div><div class="stat-lbl">Total Revenue</div></div>
+    <div class="stat" style="--accent-color:var(--rose)"><div class="stat-icon">⚠️</div><div class="stat-val" id="s-comp">—</div><div class="stat-lbl">Open Complaints</div></div>
+    <div class="stat" style="--accent-color:var(--green)"><div class="stat-icon">🟢</div><div class="stat-val" id="s-drv">—</div><div class="stat-lbl">Online Drivers</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">💰 Revenue by City</div><div class="chart-wrap"><canvas id="cCity"></canvas></div></div>
+    <div class="card"><div class="card-title">💳 Payment Methods</div><div class="chart-wrap"><canvas id="cMethod"></canvas></div></div>
+  </div>
+</section>
+
+<!-- ── ACTIVE RIDES ─────────────────────────────────────────── -->
+<section id="sec-rides" style="display:none">
+  <div class="page-hd between">
+    <div><div class="page-title">Active Rides</div><div class="page-sub">Currently in progress</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="loadRides()">↻ Refresh</button>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table>
+    <thead><tr><th>Ride</th><th>Rider</th><th>Driver</th><th>Vehicle</th><th>From</th><th>To</th><th>Fare</th><th>Started</th></tr></thead>
+    <tbody id="tb-rides"><tr class="empty"><td colspan="8">Loading…</td></tr></tbody>
+  </table></div></div>
+</section>
+
+<!-- ── TOP DRIVERS ────────────────────────────────────────── -->
+<section id="sec-top-drivers" style="display:none">
+  <div class="page-hd between">
+    <div><div class="page-title">Top Drivers</div><div class="page-sub">Drivers with average rating above 4.5</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="loadTopDrivers()">↻ Refresh</button>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table>
+    <thead><tr><th>Rank</th><th>Driver</th><th>City</th><th>Avg Rating</th><th>Total Ratings</th><th>Total Rides</th><th>Verified</th></tr></thead>
+    <tbody id="tb-top-drivers"><tr class="empty"><td colspan="7">Loading…</td></tr></tbody>
+  </table></div></div>
+</section>
+
+<!-- ── REVENUE ──────────────────────────────────────────────── -->
+<section id="sec-revenue" style="display:none">
+  <div class="page-hd"><div class="page-title">Revenue</div><div class="page-sub">Financial analytics</div></div>
+  <div class="g2">
+    <div class="card"><div class="card-title">📍 By City</div><div class="chart-wrap"><canvas id="cCity2"></canvas></div></div>
+    <div class="card"><div class="card-title">💳 By Method</div><div class="chart-wrap"><canvas id="cMeth2"></canvas></div></div>
+  </div>
+</section>
+
+<!-- ── LEADERBOARD ─────────────────────────────────────────── -->
+<section id="sec-leaderboard" style="display:none">
+  <div class="page-hd"><div class="page-title">Driver Leaderboard</div><div class="page-sub">Top-rated drivers by city</div></div>
+  <div class="card"><div class="tbl-wrap"><table>
+    <thead><tr><th>Rank</th><th>Driver</th><th>City</th><th>Rating</th><th>Rides</th></tr></thead>
+    <tbody id="tb-lb"><tr class="empty"><td colspan="5">Loading…</td></tr></tbody>
+  </table></div></div>
+</section>
+
+<!-- ── VEHICLES ───────────────────────────────────────────── -->
+<section id="sec-vehicles" style="display:none">
+  <div class="page-hd between">
+    <div><div class="page-title">Vehicle Management</div><div class="page-sub">All registered vehicles</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="loadVehicles()">↻ Refresh</button>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table>
+    <thead><tr><th>ID</th><th>Driver</th><th>Make / Model</th><th>Type</th><th>Plate</th><th>Year</th><th>Status</th></tr></thead>
+    <tbody id="tb-vehicles"><tr class="empty"><td colspan="7">Loading…</td></tr></tbody>
+  </table></div></div>
+</section>
+
+<!-- ── COMPLAINTS ───────────────────────────────────────────── -->
+<section id="sec-complaints" style="display:none">
+  <div class="page-hd between">
+    <div><div class="page-title">Complaints</div><div class="page-sub">User-filed complaints</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="loadComplaints()">↻ Refresh</button>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table>
+    <thead><tr><th>ID</th><th>Ride</th><th>Filed By</th><th>Description</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+    <tbody id="tb-complaints"><tr class="empty"><td colspan="7">Loading…</td></tr></tbody>
+  </table></div></div>
+</section>
+
+<!-- ── USERS ────────────────────────────────────────────────── -->
+<section id="sec-users" style="display:none">
+  <div class="page-hd between">
+    <div><div class="page-title">User Management</div><div class="page-sub">All platform accounts</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="loadUsers()">↻ Refresh</button>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table>
+    <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
+    <tbody id="tb-users"><tr class="empty"><td colspan="7">Loading…</td></tr></tbody>
+  </table></div></div>
+</section>
+
+</main>
+</div>
+
+<script src="/static/main.js"></script>
+<script>
+Chart.defaults.color = '#8DA4C4';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+const SECS = ['overview','rides','revenue','top-drivers','leaderboard','complaints','vehicles','users'];
+const navEls = () => document.querySelectorAll('.sb-item');
+
+function go(name) {
+  showSection(SECS, name, navEls());
+  if (name==='rides')       loadRides();
+  if (name==='revenue')     loadRevCharts();
+  if (name==='top-drivers') loadTopDrivers();
+  if (name==='leaderboard') loadLeaderboard();
+  if (name==='complaints')  loadComplaints();
+  if (name==='vehicles')    loadVehicles();
+  if (name==='users')       loadUsers();
+}
+
+/* ── Stats & Overview charts ─────────────────────────────── */
+async function initOverview() {
+  try {
+    const [st, city, meth] = await Promise.all([
+      api('/api/admin/stats'),
+      api('/api/admin/revenue-city'),
+      api('/api/admin/revenue-method'),
+    ]);
+    document.getElementById('s-users').textContent  = st.total_users;
+    document.getElementById('s-done').textContent   = st.completed_rides;
+    document.getElementById('s-active').textContent = st.active_rides;
+    document.getElementById('s-rev').textContent    = pkr(st.revenue);
+    document.getElementById('s-comp').textContent   = st.open_complaints;
+    document.getElementById('s-drv').textContent    = st.online_drivers;
+    buildBarChart('cCity',   city.map(r=>r.city),   city.map(r=>r.gross), city.map(r=>r.net));
+    buildDonut('cMethod', meth.map(r=>r.method), meth.map(r=>r.amount));
+  } catch(e) { toast.error(e.message); }
+}
+
+function buildBarChart(id, labels, gross, net) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (ctx._chart) ctx._chart.destroy();
+  ctx._chart = new Chart(ctx.getContext('2d'), {
+    type:'bar', data:{ labels, datasets:[
+      {label:'Gross',data:gross,backgroundColor:'rgba(0,212,255,.45)',borderColor:'#00D4FF',borderWidth:1.5,borderRadius:5},
+      {label:'Net',  data:net,  backgroundColor:'rgba(139,92,246,.5)',borderColor:'#8B5CF6',borderWidth:1.5,borderRadius:5},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,0.04)'}}}}
+  });
+}
+function buildDonut(id, labels, data) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (ctx._chart) ctx._chart.destroy();
+  ctx._chart = new Chart(ctx.getContext('2d'), {
+    type:'doughnut', data:{ labels, datasets:[{data, backgroundColor:['rgba(0,212,255,.6)','rgba(139,92,246,.6)','rgba(0,210,140,.6)'], borderColor:['#00D4FF','#8B5CF6','#00D28C'], borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:14}}}}
+  });
+}
+
+async function loadTopDrivers() {
+  const rows = await api('/api/admin/top-drivers').catch(e=>{toast.error(e.message);return[];});
+  const tb = document.getElementById('tb-top-drivers');
+  if (!rows.length){tb.innerHTML='<tr class="empty"><td colspan="7">No drivers with rating > 4.5 yet</td></tr>';return;}
+  tb.innerHTML = rows.map((r,i)=>`<tr>
+    <td><strong style="color:${i<3?'var(--amber)':'var(--t2)'}">#${i+1}</strong></td>
+    <td style="font-weight:600">${r.driver}</td><td>${r.city}</td>
+    <td><span style="color:var(--amber);font-weight:700">${r.rating.toFixed(2)} ★</span></td>
+    <td>${r.ratings}</td><td>${r.rides}</td>
+    <td>${badge(r.verified)}</td>
+  </tr>`).join('');
+}
+
+async function loadVehicles() {
+  const rows = await api('/api/admin/vehicles').catch(e=>{toast.error(e.message);return[];});
+  const tb = document.getElementById('tb-vehicles');
+  if (!rows.length){tb.innerHTML='<tr class="empty"><td colspan="7">No vehicles registered</td></tr>';return;}
+  tb.innerHTML = rows.map(r=>`<tr>
+    <td style="color:var(--t3)">#${r.id}</td>
+    <td>${r.driver}</td>
+    <td style="font-weight:600">${r.make} ${r.model}</td>
+    <td>${badge(r.type)}</td>
+    <td style="color:var(--cyan);font-family:monospace">${r.plate}</td>
+    <td style="color:var(--t2)">${r.year}</td>
+    <td>${badge(r.status)}</td>
+  </tr>`).join('');
+}
+
+/* ── Active rides ────────────────────────────────────────── */
+async function loadRides() {
+  const rows = await api('/api/admin/active-rides').catch(e=>{toast.error(e.message);return[];});
+  const tb = document.getElementById('tb-rides');
+  if (!rows.length){tb.innerHTML='<tr class="empty"><td colspan="8">No active rides</td></tr>';return;}
+  tb.innerHTML = rows.map(r=>`<tr>
+    <td><strong>#${r.RideID}</strong></td><td>${r.RiderName}</td><td>${r.DriverName||'—'}</td>
+    <td style="color:var(--t2)">${r.Make} ${r.Model} · ${r.LicensePlate}</td>
+    <td>${r.PickupStreet}, ${r.PickupCity}</td><td>${r.DropoffStreet}, ${r.DropoffCity}</td>
+    <td style="color:var(--cyan);font-weight:700">${pkr(r.Fare)}</td>
+    <td style="color:var(--t3)">${r.StartTime||'—'}</td>
+  </tr>`).join('');
+}
+
+/* ── Revenue section charts ──────────────────────────────── */
+async function loadRevCharts() {
+  try {
+    const [city, meth] = await Promise.all([api('/api/admin/revenue-city'), api('/api/admin/revenue-method')]);
+    buildBarChart('cCity2', city.map(r=>r.city), city.map(r=>r.gross), city.map(r=>r.net));
+    buildDonut('cMeth2', meth.map(r=>r.method), meth.map(r=>r.amount));
+  } catch(e) { toast.error(e.message); }
+}
+
+/* ── Leaderboard ─────────────────────────────────────────── */
+async function loadLeaderboard() {
+  const rows = await api('/api/admin/leaderboard').catch(e=>{toast.error(e.message);return[];});
+  const tb = document.getElementById('tb-lb');
+  if (!rows.length){tb.innerHTML='<tr class="empty"><td colspan="5">No data</td></tr>';return;}
+  tb.innerHTML = rows.map((r,i)=>`<tr>
+    <td><strong style="color:${i<3?'var(--amber)':'var(--t2)'}">#${i+1}</strong></td>
+    <td style="font-weight:600">${r.driver}</td><td>${r.city}</td>
+    <td>${'★'.repeat(Math.round(r.rating))}<span style="color:var(--amber);font-weight:700;margin-left:5px">${r.rating.toFixed(1)}</span></td>
+    <td>${r.rides}</td>
+  </tr>`).join('');
+}
+
+/* ── Complaints ──────────────────────────────────────────── */
+async function loadComplaints() {
+  const rows = await api('/api/admin/complaints').catch(e=>{toast.error(e.message);return[];});
+  const tb = document.getElementById('tb-complaints');
+  if (!rows.length){tb.innerHTML='<tr class="empty"><td colspan="7">No complaints</td></tr>';return;}
+  tb.innerHTML = rows.map(r=>`<tr>
+    <td>#${r.ComplaintID}</td><td>#${r.RideID}</td><td>${r.FiledBy}</td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)">${r.Description}</td>
+    <td>${badge(r.ComplaintStatus)}</td><td style="color:var(--t3)">${r.CreatedAt||'—'}</td>
+    <td class="row">
+      ${r.ComplaintStatus==='Open'
+        ? `<button class="btn btn-green btn-xs" onclick="actComplaint(${r.ComplaintID},'resolve')">Resolve</button>
+           <button class="btn btn-ghost btn-xs" onclick="actComplaint(${r.ComplaintID},'dismiss')">Dismiss</button>`
+        : `<span style="color:var(--t3);font-size:12px">Closed</span>`}
+    </td>
+  </tr>`).join('');
+}
+async function actComplaint(id, action) {
+  try { await api(`/api/admin/complaints/${id}/${action}`,'POST'); toast.success(`Complaint ${action}d`); loadComplaints(); }
+  catch(e){ toast.error(e.message); }
+}
+
+/* ── Users ───────────────────────────────────────────────── */
+async function loadUsers() {
+  const rows = await api('/api/admin/users').catch(e=>{toast.error(e.message);return[];});
+  const tb = document.getElementById('tb-users');
+  tb.innerHTML = rows.map(r=>`<tr>
+    <td style="color:var(--t3)">#${r.id}</td>
+    <td style="font-weight:600">${r.name}</td>
+    <td style="color:var(--t2)">${r.email}</td>
+    <td>${badge(r.role)}</td><td>${badge(r.status)}</td>
+    <td style="color:var(--t3)">${r.joined}</td>
+    <td>${r.role!=='Admin'
+      ? `<button class="btn btn-ghost btn-xs" onclick="toggleUser(${r.id},this)">${r.status==='Active'?'Suspend':'Activate'}</button>`
+      : '—'}</td>
+  </tr>`).join('');
+}
+async function toggleUser(id, btn) {
+  try { const d = await api(`/api/admin/users/${id}/toggle`,'POST'); toast.success(`User ${d.status}`); loadUsers(); }
+  catch(e){ toast.error(e.message); }
+}
+
+initOverview();
+</script>
+</body>
+</html>
