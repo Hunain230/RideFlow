@@ -1,218 +1,195 @@
-# RideFlow — Complete Setup & Reference Guide
+# RideFlow
 
-**Students:** 24i_0026 / 24i_0127  
-**Course:** Database Systems Lab (AI & DS) — Spring 2026  
-**Stack:** MySQL 8.x · Python 3.12 · Flask 3.x
+RideFlow is a ride-hailing database project built with MySQL 8 and a Flask web app. It models the full flow of a small ride platform: authentication, ride booking, driver assignment, trip completion, payments, ratings, complaints, wallet payouts, admin reporting, and role-based access control.
 
----
+## Stack
 
-## Project Structure
+- MySQL 8.x
+- Python 3.12
+- Flask 3.x
+- mysql-connector-python
+
+## What is in the system
+
+The database layer is split into numbered SQL phases plus a single master runner:
+
+- 00_setup.sql creates the rideflow database and demo MySQL users.
+- 02_schema.sql creates the 11 core tables.
+- 03_seed.sql loads demo data.
+- 04_triggers.sql adds business triggers.
+- 05_procedures.sql adds stored procedures such as fare calculation, surge pricing, promo redemption, and payout handling.
+- 06_views.sql adds reporting views.
+- 07_dcl.sql applies role-based permissions.
+- 08_indexes.sql adds performance indexes.
+- 09_reports.sql contains reporting queries for the database lab.
+- run_all.sql runs every phase in order.
+
+The Flask app in app.py provides the web UI and JSON endpoints for three roles:
+
+- Admin dashboard for platform stats, revenue charts, complaint handling, vehicle management, and user controls.
+- Rider dashboard for booking rides, viewing history, rating drivers, applying promo codes, and filing complaints.
+- Driver dashboard for availability, assigned rides, earnings, wallet balance, payouts, and ratings.
+
+## Project Layout
 
 ```
-db lab/
-│
-├── 📄 00_setup.sql          Phase 1 — Create rideflow DB + MySQL users
-├── 📄 02_schema.sql         Phase 2 — All 11 tables, constraints, FKs
-├── 📄 03_seed.sql           Phase 3 — Realistic seed data (all tables)
-├── 📄 04_triggers.sql       Phase 4 — 4 business-logic triggers
-├── 📄 05_procedures.sql     Phase 5 — 4 stored procedures (fixed)
-├── 📄 06_views.sql          Phase 6 — 5 analytical views (fixed)
-├── 📄 07_dcl.sql            Phase 7 — Role-based access control
-├── 📄 08_indexes.sql        Phase 8 — 13 performance indexes
-├── 📄 09_reports.sql        Phase 9 — 10 reporting queries
-├── 📄 run_all.sql           Master runner (sources all phases)
-│
-├── 🐍 app.py                Flask backend — all API routes
-├── 🐍 config.py             DB connection settings ← SET PASSWORD HERE
-├── 📄 requirements.txt      Python dependencies
-│
+RideFlow/
+├── 00_setup.sql
+├── 02_schema.sql
+├── 03_seed.sql
+├── 04_triggers.sql
+├── 05_procedures.sql
+├── 06_views.sql
+├── 07_dcl.sql
+├── 08_indexes.sql
+├── 09_reports.sql
+├── run_all.sql
+├── app.py
+├── config.py
+├── requirements.txt
 ├── templates/
-│   ├── login.html           Sign-in page
-│   ├── admin_dashboard.html Admin portal (stats, charts, management)
-│   ├── rider_dashboard.html Rider portal (book, history, complaints)
-│   └── driver_dashboard.html Driver portal (availability, rides, earnings)
-│
 └── static/
-    ├── style.css            Global design system (glassmorphic dark theme)
-    └── main.js              Shared JS utilities (toast, api, badge, pkr)
 ```
 
----
+## Requirements
 
-## Quick Start
+- MySQL Server 8.x running locally
+- Python 3.12 or compatible 3.x release
+- A terminal or MySQL client such as Workbench
 
-### Step 1 — Configure DB password
+## Configuration
 
-Open `config.py` and set your MySQL root password:
+config.py reads database settings from environment variables or a local .env file.
 
-```python
-'password': 'your_mysql_root_password_here',
-```
+Supported variables:
 
-### Step 2 — Load the database
+- MYSQL_HOST default: localhost
+- MYSQL_USER default: root
+- MYSQL_PASSWORD default: empty
+- MYSQL_DATABASE default: rideflow
+- MYSQL_CHARSET default: utf8mb4
+- MYSQL_AUTOCOMMIT default: false
+- SECRET_KEY default: a development-only placeholder value
 
-**Option A — MySQL Workbench:**  
-Open each SQL file and run in order: `00 → 02 → 03 → 04 → 05 → 06 → 07 → 08`
+If you do not use a .env file, set MYSQL_PASSWORD to your MySQL password before starting the app.
 
-**Option B — Command line:**
-```bash
-cd "c:\Users\surface\Desktop\db lab"
-mysql -u root -p < 00_setup.sql
-mysql -u root -p rideflow < 02_schema.sql
-mysql -u root -p rideflow < 03_seed.sql
-mysql -u root -p rideflow < 04_triggers.sql
-mysql -u root -p rideflow < 05_procedures.sql
-mysql -u root -p rideflow < 06_views.sql
-mysql -u root -p rideflow < 07_dcl.sql
-mysql -u root -p rideflow < 08_indexes.sql
-```
+## Setup
 
-### Step 3 — Start the web app
+### 1. Install Python dependencies
 
 ```powershell
-cd "c:\Users\surface\Desktop\db lab"
+cd "c:\Users\surface\Desktop\RideFlow"
+python -m pip install -r requirements.txt
+```
+
+### 2. Initialize the database
+
+Run the setup file first as a MySQL root user:
+
+```powershell
+mysql.exe -u root -p --execute="source C:/Users/surface/Desktop/RideFlow/00_setup.sql"
+```
+
+Then load the full schema, seed data, triggers, procedures, views, permissions, indexes, and reports. The simplest option is the master runner:
+
+```powershell
+mysql.exe -u root -p rideflow --execute="source C:/Users/surface/Desktop/RideFlow/run_all.sql"
+```
+
+If you prefer MySQL Workbench, open and run the SQL files in this order:
+
+00_setup.sql -> 02_schema.sql -> 03_seed.sql -> 04_triggers.sql -> 05_procedures.sql -> 06_views.sql -> 07_dcl.sql -> 08_indexes.sql -> 09_reports.sql
+
+Note: on Windows PowerShell, mysql < file.sql redirection is often unreliable. Use source ... or Workbench instead.
+
+### 3. Configure database access for Flask
+
+The app uses the values from config.py or .env. For local development, the database defaults are:
+
+- host: localhost
+- user: root
+- database: rideflow
+
+Set MYSQL_PASSWORD to your local MySQL password before running the app.
+
+### 4. Start the web app
+
+```powershell
+cd "c:\Users\surface\Desktop\RideFlow"
 python app.py
 ```
 
-Open **http://localhost:5000** in your browser.
+The Flask server starts on http://localhost:5000 with debug mode enabled.
 
----
+## Demo Logins
 
-## Demo Login Credentials
+The login page uses demo accounts seeded in the database. The password is the user's first name, case-insensitive.
 
-| Role   | Email                        | Password |
-|--------|------------------------------|----------|
-| Admin  | `ali.raza@rideflow.pk`       | `ali`    |
-| Rider  | `sara.ahmed@gmail.com`       | `sara`   |
-| Rider  | `hamza.khan@gmail.com`       | `hamza`  |
-| Driver | `bilal.driver@gmail.com`     | `bilal`  |
-| Driver | `kamran.iqbal@gmail.com`     | `kamran` |
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | ali.raza@rideflow.pk | ali |
+| Rider | sara.ahmed@gmail.com | sara |
+| Rider | hamza.khan@gmail.com | hamza |
+| Driver | bilal.driver@gmail.com | bilal |
+| Driver | kamran.iqbal@gmail.com | kamran |
 
-> **Rule:** Password = user's first name (case-insensitive). This is intentional demo behaviour.
+## Main Features
 
----
+### Admin
 
-## Web App Features
+- Live platform stats: users, completed rides, active rides, revenue, open complaints, online drivers
+- Revenue charts by city and by payment method
+- Driver leaderboard and top-driver listings
+- Active ride monitoring
+- Complaint resolution or dismissal
+- User suspension and reactivation
+- Vehicle inventory view
 
-### Admin Dashboard
-- Live stats: users, rides, revenue, active rides, complaints, online drivers
-- Revenue by city (bar chart) and by payment method (doughnut chart)
-- Driver leaderboard ranked by average rating per city
-- Active rides table (in real-time)
-- Complaint management — resolve or dismiss
-- User management — suspend or re-activate accounts
+### Rider
 
-### Rider Dashboard
-- Book a ride with pickup/dropoff selector and vehicle type chooser
-- Auto-assigns nearest available verified driver
+- Book a ride by choosing pickup, drop-off, and vehicle type
+- Automatic driver assignment for matching requests
 - Ride history with status badges
-- Rate driver (1–5 stars) after completed rides — blocked if already rated
-- Apply promo codes (`WELCOME10`, `RIDE20`, `NEWUSER25`) to completed rides
-- File complaints against any ride
-- View filed complaints with status
+- Rate a driver after a completed ride
+- Apply promo codes to a completed ride
+- File complaints and review complaint status
 
-### Driver Dashboard
-- Toggle Online / Offline availability
-- View assigned rides (Accepted → start → InProgress → complete)
-- Fare auto-calculated via `CalculateFare()` stored procedure on completion
-- Payment auto-created; trigger credits wallet minus commission
-- Wallet balance display + payout request
-- Earnings breakdown (gross, commission, net) with doughnut chart
-- Rating history from riders
+### Driver
 
----
+- Switch availability online/offline
+- View assigned rides and progress them from accepted to completed
+- See earnings, wallet balance, commission, and completed ride count
+- Request a payout from the wallet
+- Review rider ratings and comments
 
-## Database Schema (11 Tables)
+## Database Objects
 
-| Table            | Type        | Seed Rows |
-|------------------|-------------|-----------|
-| USERS            | Strong      | 11        |
-| USER_PHONES      | Multi-val   | 12        |
-| LOCATIONS        | Strong      | 12        |
-| DRIVERS          | Strong      | 5         |
-| VEHICLES         | Strong      | 6         |
-| PROMOCODES       | Strong      | 5         |
-| RIDES            | Strong      | 10        |
-| PAYMENTS         | Strong      | 6         |
-| USER_PROMOCODES  | Associative | 5         |
-| RATINGS          | Weak        | 12        |
-| COMPLAINTS       | Strong      | 3         |
+The schema contains 11 tables:
 
----
+- USERS
+- USER_PHONES
+- LOCATIONS
+- DRIVERS
+- VEHICLES
+- PROMOCODES
+- RIDES
+- PAYMENTS
+- COMPLAINTS
+- RATINGS
+- USER_PROMOCODES
 
-## Stored Procedures
+The system also includes stored procedures, triggers, views, DCL rules, and indexes to support the dashboards and reporting queries.
 
-```sql
--- Recalculate fare (auto-called on ride completion)
-CALL CalculateFare(1);
+## API Surface
 
--- Apply surge pricing (multiplier 1.0–5.0)
-CALL ApplySurgePricing(1, 2.00);
+app.py exposes JSON endpoints for login, logout, and role-specific actions. The main groups are:
 
--- Apply a promo code to a completed ride's payment
-CALL ApplyPromoCode(1, 'WELCOME10');
+- Admin: stats, revenue charts, leaderboard, active rides, complaints, users, and vehicles
+- Rider: locations, ride history, booking, ratings, promo codes, and complaints
+- Driver: profile, toggle availability, assigned rides, ride start/complete, ratings, and payout
 
--- Request wallet payout (resets balance to 0)
-CALL RequestPayout(1);
-```
+## Notes
 
----
-
-## Triggers
-
-| Trigger                    | Event                  | Effect                                      |
-|----------------------------|------------------------|---------------------------------------------|
-| `trg_SuspendLowRatedDriver`| AFTER INSERT on RATINGS| Suspends driver if avg rating < 3.5         |
-| `trg_DriverOnlineAfterRide`| AFTER UPDATE on RIDES  | Sets driver Online when ride Completed      |
-| `trg_CreditDriverWallet`   | AFTER INSERT on PAYMENTS| Credits net earnings to driver wallet      |
-| `trg_FlagLowRatedRider`    | AFTER INSERT on RATINGS| Suspends rider if avg rating < 3.0          |
-
----
-
-## Bug Fixes Applied (Refactor v2)
-
-| Bug | Fix |
-|-----|-----|
-| `CalculateFare` CASE with multiple SETs (invalid MySQL syntax) | Replaced with `IF/ELSEIF` blocks |
-| `vw_DriverLeaderboard` excluded drivers with NULL location | Changed `JOIN` to `LEFT JOIN LOCATIONS` |
-| `vw_DriverEarnings` excluded drivers with 0 rides | Changed inner JOINs to `LEFT JOIN` + `COALESCE` |
-| `loadMyComplaints()` called wrong API endpoint | Fixed to call `/api/rider/complaints` |
-| Missing `/api/rider/complaints` endpoint | Added to `app.py` |
-| `api_complete_ride` reused stale cursor after callproc | Refactored into multi-step with fresh connections |
-| `Decimal` values not JSON-serializable | Added `Decimal → float` in `clean()` helper |
-| Rider could submit duplicate ratings | Added `AlreadyRated` flag from DB; button hidden |
-| No input validation on API endpoints | Added checks with descriptive error messages |
-| Admin could suspend themselves | Added self-modify guard |
-| Chart.js canvases re-rendered without destroying old instance | Added `ctx._chart.destroy()` before redraw |
-
----
-
-## API Reference
-
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| POST | `/login` | — | Authenticate user |
-| GET | `/logout` | — | Clear session |
-| GET | `/api/admin/stats` | Admin | Platform stats |
-| GET | `/api/admin/revenue-city` | Admin | Revenue by city |
-| GET | `/api/admin/revenue-method` | Admin | Revenue by payment method |
-| GET | `/api/admin/leaderboard` | Admin | Driver leaderboard |
-| GET | `/api/admin/active-rides` | Admin | InProgress rides |
-| GET | `/api/admin/complaints` | Admin | All complaints |
-| POST | `/api/admin/complaints/<id>/<action>` | Admin | Resolve or dismiss |
-| GET | `/api/admin/users` | Admin | All users |
-| POST | `/api/admin/users/<id>/toggle` | Admin | Suspend/activate |
-| GET | `/api/rider/locations` | Rider | All locations |
-| GET | `/api/rider/rides` | Rider | Own ride history |
-| GET | `/api/rider/complaints` | Rider | Own complaints |
-| POST | `/api/rider/request` | Rider | Book a ride |
-| POST | `/api/rider/rate` | Rider | Rate a driver |
-| POST | `/api/rider/promo` | Rider | Apply promo code |
-| POST | `/api/rider/complaint` | Rider | File a complaint |
-| GET | `/api/driver/profile` | Driver | Profile + earnings |
-| POST | `/api/driver/toggle` | Driver | Toggle availability |
-| GET | `/api/driver/requests` | Driver | Assigned rides |
-| POST | `/api/driver/ride/<id>/start` | Driver | Start a ride |
-| POST | `/api/driver/ride/<id>/complete` | Driver | Complete + auto-pay |
-| GET | `/api/driver/ratings` | Driver | Received ratings |
-| POST | `/api/driver/payout` | Driver | Request payout |
+- app.py runs with debug=True and port 5000.
+- Driver wallet credits and ride completion logic are handled by the database triggers and procedures.
+- If login fails with a database error, verify that MySQL is running and that MYSQL_PASSWORD matches your local setup.
