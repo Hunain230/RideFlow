@@ -9,7 +9,7 @@ import { clsx } from 'clsx';
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, openSignIn, openSignUp, logout } = useAppStore();
+  const { user, logout } = useAppStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -80,10 +80,10 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Button variant="glass" size="sm" onClick={openSignIn}>
+              <Button variant="glass" size="sm" onClick={() => navigate('/login')}>
                 Sign In
               </Button>
-              <Button variant="primary" size="sm" onClick={openSignUp}>
+              <Button variant="primary" size="sm" onClick={() => navigate('/signup')}>
                 Sign Up
               </Button>
             </>
@@ -126,10 +126,10 @@ export function Navbar() {
                 </Button>
               ) : (
                 <>
-                  <Button variant="glass" fullWidth onClick={() => { openSignIn(); setMenuOpen(false); }}>
+                  <Button variant="glass" fullWidth onClick={() => { navigate('/login'); setMenuOpen(false); }}>
                     Sign In
                   </Button>
-                  <Button variant="primary" fullWidth onClick={() => { openSignUp(); setMenuOpen(false); }}>
+                  <Button variant="primary" fullWidth onClick={() => { navigate('/signup'); setMenuOpen(false); }}>
                     Sign Up
                   </Button>
                 </>
