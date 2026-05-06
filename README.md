@@ -53,9 +53,9 @@ RideFlow/
 
 ## Requirements
 
-- MySQL Server 8.x running locally
-- Python 3.12 or compatible 3.x release
-- A terminal or MySQL client such as Workbench
+- MySQL Server 8.x local
+- Python 3.12 
+- MySQL client such as Workbench
 
 ## Configuration
 
