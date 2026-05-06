@@ -222,18 +222,14 @@ export default function SignUpPage() {
                 </select>
                 <div className="flex-1 relative">
                   <input
+                    id="phone"
                     type="tel"
                     className={clsx('form-input-dark w-full', errors.phone && 'error')}
                     placeholder=" "
                     disabled={authLoading}
                     {...register('phone')}
                   />
-                  <label
-                    className="absolute pointer-events-none"
-                    style={{ left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '1rem' }}
-                  >
-                    Phone Number
-                  </label>
+                  <label htmlFor="phone">Phone Number</label>
                 </div>
               </div>
               {errors.phone && <p className="form-error-msg">{errors.phone.message}</p>}

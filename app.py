@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 import mysql.connector
 from functools import wraps
 from config import DB_CONFIG, SECRET_KEY
@@ -159,32 +159,44 @@ def role_required(*roles):
             if 'user_id' not in session or session.get('role') not in roles:
                 if request.path.startswith('/api/'):
                     return jsonify({'error': 'Unauthorized'}), 401
-                return redirect(url_for('login_page'))
+                return redirect('/')
             return f(*a, **kw)
         return decorated
     return deco
 
 # ── Pages ──────────────────────────────────────────────────────
 @app.route('/')
-def login_page():
+def serve_react():
     if 'user_id' in session:
-        return redirect({'Admin':'/admin','Rider':'/rider','Driver':'/driver'}.get(session['role'],'/'))
-    return render_template('login.html')
+        # Let React handle the routing based on user role
+        pass
+    return send_from_directory('dist', 'index.html')
 
 @app.route('/admin')
 @role_required('Admin')
-def admin_page():
-    return render_template('admin_dashboard.html', user=session)
+def serve_admin():
+    return send_from_directory('dist', 'index.html')
 
 @app.route('/rider')
 @role_required('Rider')
-def rider_page():
-    return render_template('rider_dashboard.html', user=session)
+def serve_rider():
+    return send_from_directory('dist', 'index.html')
 
 @app.route('/driver')
 @role_required('Driver')
-def driver_page():
-    return render_template('driver_dashboard.html', user=session)
+def serve_driver():
+    return send_from_directory('dist', 'index.html')
+
+# Serve static React assets
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    return send_from_directory('dist/assets', filename)
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    if filename.startswith('assets/'):
+        return send_from_directory('dist/assets', filename[7:])
+    return send_from_directory('dist', filename)
 
 # ── Auth endpoints ─────────────────────────────────────────────
 @app.route('/login', methods=['POST'])
