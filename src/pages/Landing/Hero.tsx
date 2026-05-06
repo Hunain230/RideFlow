@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { fadeSlideUp } from '@/lib/motion';
 
