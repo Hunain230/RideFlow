@@ -1,50 +1,252 @@
-# Python bytecode and cache
+# ============================================================
+# RideFlow — .gitignore
+# Covers: Node.js / React / Vite / TypeScript + Python / Flask
+# ============================================================
+
+
+# ── Node.js ──────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+package-lock.json.bak
+yarn.lock.bak
+
+
+# ── Vite / Build Output ───────────────────────────────────────
+dist/
+dist-ssr/
+build/
+.vite/
+*.local
+
+
+# ── TypeScript ────────────────────────────────────────────────
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+
+# ── CSS / PostCSS cache ───────────────────────────────────────
+.stylelintcache
+.postcss-cache/
+
+
+# ── Testing ───────────────────────────────────────────────────
+coverage/
+.nyc_output/
+cypress/videos/
+cypress/screenshots/
+playwright-report/
+test-results/
+
+
+# ── ESLint ────────────────────────────────────────────────────
+.eslintcache
+
+
+# ── Storybook ─────────────────────────────────────────────────
+storybook-static/
+
+
+# ── SWC / Babel cache ─────────────────────────────────────────
+.swc/
+.cache/
+.babel_cache/
+
+
+# ── Python bytecode & cache ───────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
+*.pyd
 
-# Virtual environments
+
+# ── Python packaging ──────────────────────────────────────────
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+pip-wheel-metadata/
+share/python-wheels/
+
+
+# ── Virtual environments ──────────────────────────────────────
 .venv/
 venv/
 env/
 ENV/
+env.bak/
+venv.bak/
 
-# Distribution and packaging
-build/
-dist/
-*.egg-info/
-.eggs/
 
-# Test and coverage artifacts
+# ── Python testing & coverage ─────────────────────────────────
 .pytest_cache/
 .coverage
 .coverage.*
 htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
 
-# Type checkers and linters
+
+# ── Python type checkers & linters ───────────────────────────
 .mypy_cache/
 .pyre/
 .ruff_cache/
+.pytype/
+pyrightconfig.json
 
-# Flask instance and local database artifacts
+
+# ── Flask / SQLAlchemy ────────────────────────────────────────
 instance/
 *.db
+*.sqlite
 *.sqlite3
+flask_session/
 
-# Logs and runtime files
-*.log
-*.pid
 
-# Environment and secrets
+# ── Databases ─────────────────────────────────────────────────
+*.sql.bak
+*.dump
+
+
+# ── Jupyter Notebooks ─────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+
+# ── Environment & Secrets ─────────────────────────────────────
 .env
 .env.*
 !.env.example
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+secrets.json
+secrets.yaml
+secrets.yml
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+service-account*.json
+firebase-*.json
 
-# Editor and OS files
-.vscode/
-.idea/
+
+# ── Logs ──────────────────────────────────────────────────────
+logs/
+*.log
+*.log.*
+npm-debug.log
+yarn-debug.log
+lerna-debug.log
+.pnpm-debug.log
+
+
+# ── Runtime ───────────────────────────────────────────────────
+*.pid
+*.pid.lock
+*.sock
+pids/
+
+
+# ── OS — macOS ────────────────────────────────────────────────
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
 
-# Jupyter
-.ipynb_checkpoints/
+
+# ── OS — Windows ──────────────────────────────────────────────
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+
+# ── OS — Linux ────────────────────────────────────────────────
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+
+# ── Editor — VS Code ──────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+
+
+# ── Editor — JetBrains ────────────────────────────────────────
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+
+# ── Editor — Vim / Emacs ──────────────────────────────────────
+*.swp
+*.swo
+*~
+\#*\#
+.#*
+
+
+# ── Editor — Sublime Text ─────────────────────────────────────
+*.sublime-project
+*.sublime-workspace
+
+
+# ── Package managers lock files (optional — uncomment to ignore)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+
+# ── Three.js / WASM / Binary assets ──────────────────────────
+*.glb
+*.gltf
+*.wasm
+
+
+# ── Temporary files ───────────────────────────────────────────
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+
+
+# ── Deployment & Docker ───────────────────────────────────────
+.dockerignore
+docker-compose.override.yml
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+
+# ── AI / Tool artifacts ───────────────────────────────────────
+.gemini/
+.cursor/
+.aider*
+.claude/

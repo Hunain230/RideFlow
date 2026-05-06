@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
-    "@studio-freight/lenis": "^1.1.14",
+    "lenis": "^1.1.14",
     "chart.js": "^4.4.2",
     "clsx": "^2.1.0",
     "framer-motion": "^11.2.10",
