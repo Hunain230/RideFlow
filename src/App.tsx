@@ -92,6 +92,22 @@ export default function App() {
             }
           />
           <Route
+            path="/rider/trips"
+            element={
+              <ProtectedRoute allowedRoles={['rider']}>
+                <RiderDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rider/settings"
+            element={
+              <ProtectedRoute allowedRoles={['rider']}>
+                <RiderDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/driver"
             element={
               <ProtectedRoute allowedRoles={['driver']}>
@@ -100,7 +116,87 @@ export default function App() {
             }
           />
           <Route
+            path="/driver/earnings"
+            element={
+              <ProtectedRoute allowedRoles={['driver']}>
+                <DriverDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/driver/trips"
+            element={
+              <ProtectedRoute allowedRoles={['driver']}>
+                <DriverDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/driver/settings"
+            element={
+              <ProtectedRoute allowedRoles={['driver']}>
+                <DriverDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/map"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/trips"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/payments"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/disputes"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/notifications"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
