@@ -5,6 +5,8 @@ import LandingPage from '@/pages/Landing';
 import RiderDashboard from '@/pages/RiderDashboard';
 import DriverDashboard from '@/pages/DriverDashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
+import LoginPage from '@/pages/Auth/LoginPage';
+import SignUpPage from '@/pages/Auth/SignUpPage';
 import { SignInModal } from '@/pages/Auth/SignInModal';
 import { SignUpModal } from '@/pages/Auth/SignUpModal';
 
@@ -45,6 +47,13 @@ function DashboardRedirect() {
   return <Navigate to={paths[user.role] || '/'} replace />;
 }
 
+/** Redirect already-logged-in users away from auth pages */
+function GuestOnly({ children }: { children: React.ReactNode }) {
+  const { user } = useAppStore();
+  if (user) return <DashboardRedirect />;
+  return <>{children}</>;
+}
+
 export default function App() {
   const location = useLocation();
 
@@ -58,6 +67,22 @@ export default function App() {
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<DashboardRedirect />} />
+          <Route
+            path="/login"
+            element={
+              <GuestOnly>
+                <LoginPage />
+              </GuestOnly>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <GuestOnly>
+                <SignUpPage />
+              </GuestOnly>
+            }
+          />
           <Route
             path="/rider"
             element={
