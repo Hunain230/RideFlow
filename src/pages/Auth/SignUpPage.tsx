@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Chrome, ArrowRight, Car, Users,
   AlertCircle, CheckCircle2, Loader2,
-  IdCard, CarFront,
+  CreditCard, CarFront,
 } from 'lucide-react';
 import { z } from 'zod';
 import { useAppStore } from '@/store/useAppStore';
@@ -265,7 +265,7 @@ export default function SignUpPage() {
                     style={{ background: 'rgba(217,119,6,0.05)', border: '1px solid rgba(217,119,6,0.15)' }}
                   >
                     <p className="text-xs text-amber-600 font-semibold uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <IdCard size={14} /> Driver Verification
+                      <CreditCard size={14} /> Driver Verification
                     </p>
                     <FormInput
                       label="License Number"

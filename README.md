@@ -1,142 +1,119 @@
 # RideFlow
 
-RideFlow is a ride-hailing database project built with MySQL 8 and a Flask web app. It models the full flow of a small ride platform: authentication, ride booking, driver assignment, trip completion, payments, ratings, complaints, wallet payouts, admin reporting, and role-based access control.
+RideFlow is a premium, full-stack ride-hailing web application. It features a modern, high-fidelity React frontend coupled with a robust Flask/MySQL backend. The project models the complete lifecycle of a ride platform: user authentication, ride booking, driver assignment, trip completion, payments, ratings, wallet payouts, admin reporting, and role-based access control.
 
-## Stack
+## Tech Stack
 
-- MySQL 8.x
+**Frontend**
+- React 18 (TypeScript)
+- Vite 5
+- Tailwind CSS 3 (Dark Mode Premium Aesthetics)
+- GSAP 3.12 + ScrollTrigger + Framer Motion (Animations & Smooth Scrolling)
+- Three.js r160 (3D Hero Scenes)
+- React Hook Form + Zod (Validation)
+- Zustand (State Management)
+- Chart.js (Admin Dashboards)
+
+**Backend & Database**
 - Python 3.12
 - Flask 3.x
+- MySQL 8.x
 - mysql-connector-python
+- werkzeug.security (Password Hashing)
 
-## What is in the system
+## Architecture
 
-The database layer is split into numbered SQL phases plus a single master runner:
-
-- 00_setup.sql creates the rideflow database and demo MySQL users.
-- 02_schema.sql creates the 11 core tables.
-- 03_seed.sql loads demo data.
-- 04_triggers.sql adds business triggers.
-- 05_procedures.sql adds stored procedures such as fare calculation, surge pricing, promo redemption, and payout handling.
-- 06_views.sql adds reporting views.
-- 07_dcl.sql applies role-based permissions.
-- 08_indexes.sql adds performance indexes.
-- 09_reports.sql contains reporting queries for the database lab.
-- run_all.sql runs every phase in order.
-
-The Flask app in app.py provides the web UI and JSON endpoints for three roles:
-
-- Admin dashboard for platform stats, revenue charts, complaint handling, vehicle management, and user controls.
-- Rider dashboard for booking rides, viewing history, rating drivers, applying promo codes, and filing complaints.
-- Driver dashboard for availability, assigned rides, earnings, wallet balance, payouts, and ratings.
+The system is separated into three logical tiers:
+1. **Frontend**: A React application served via Vite on `http://localhost:5173`. It provides dedicated dashboards for Riders, Drivers, and Admins.
+2. **API Proxy**: The Vite server proxies all `/api/*` and `/logout` requests to the Flask backend running on `http://127.0.0.1:5000`.
+3. **Backend & DB**: The Flask app (`app.py`) provides JSON endpoints, manages session cookies, and handles all transactions with the MySQL database using defined procedures and triggers.
 
 ## Project Layout
 
 ```
 RideFlow/
-├── 00_setup.sql
-├── 02_schema.sql
-├── 03_seed.sql
-├── 04_triggers.sql
-├── 05_procedures.sql
-├── 06_views.sql
-├── 07_dcl.sql
-├── 08_indexes.sql
-├── 09_reports.sql
-├── run_all.sql
-├── app.py
-├── config.py
-├── requirements.txt
-├── templates/
-└── static/
+├── src/                    # React Frontend
+│   ├── components/         # Reusable UI elements and layout
+│   ├── lib/                # API client, validators, animation variants
+│   ├── pages/              # Landing, Auth, Rider, Driver, and Admin pages
+│   ├── store/              # Zustand state management
+│   ├── styles/             # Global CSS, tokens, glassmorphism utilities
+│   ├── App.tsx             # Routing & Auth Guards
+│   └── main.tsx            # React Entry
+├── *.sql                   # MySQL Database Scripts (Schema, Seeds, Triggers, etc.)
+├── app.py                  # Flask Backend Application
+├── config.py               # Flask Configuration
+├── requirements.txt        # Python Dependencies
+├── package.json            # Node Dependencies
+├── vite.config.ts          # Vite Config (Proxy rules)
+└── .env.example            # Environment variables template
 ```
 
 ## Requirements
 
+- Node.js (v18+)
+- Python 3.12
 - MySQL Server 8.x local
-- Python 3.12 
-- MySQL client such as Workbench
 
 ## Configuration
 
-config.py reads database settings from environment variables or a local .env file.
+1. Copy `.env.example` to `.env` (or set environment variables manually).
+2. Configure your MySQL credentials and a secure Flask secret key:
+   ```env
+   MYSQL_HOST=localhost
+   MYSQL_USER=root
+   MYSQL_PASSWORD=your_password
+   MYSQL_DATABASE=rideflow
+   SECRET_KEY=your_secret_key_here
+   ```
 
-Supported variables:
+## Setup & Running
 
-- MYSQL_HOST default: localhost
-- MYSQL_USER default: root
-- MYSQL_PASSWORD default: empty
-- MYSQL_DATABASE default: rideflow
-- MYSQL_CHARSET default: utf8mb4
-- MYSQL_AUTOCOMMIT default: false
-- SECRET_KEY default: a development-only placeholder value
+### 1. Initialize the Database
 
-If you do not use a .env file, set MYSQL_PASSWORD to your MySQL password before starting the app.
-
-## Setup
-
-### 1. Install Python dependencies
-
+Run the setup file first as a MySQL root user to create the database:
 ```powershell
-cd "c:\Users\surface\Desktop\RideFlow"
+mysql.exe -u root -p --execute="source C:/absolute/path/to/RideFlow/00_setup.sql"
+```
+
+Then load the full schema, seed data, triggers, procedures, views, permissions, indexes, and reports using the master runner:
+```powershell
+mysql.exe -u root -p rideflow --execute="source C:/absolute/path/to/RideFlow/run_all.sql"
+```
+
+### 2. Start the Flask Backend
+
+Install Python dependencies and start the Flask server:
+```powershell
 python -m pip install -r requirements.txt
-```
-
-### 2. Initialize the database
-
-Run the setup file first as a MySQL root user:
-
-```powershell
-mysql.exe -u root -p --execute="source C:/Users/surface/Desktop/RideFlow/00_setup.sql"
-```
-
-Then load the full schema, seed data, triggers, procedures, views, permissions, indexes, and reports. The simplest option is the master runner:
-
-```powershell
-mysql.exe -u root -p rideflow --execute="source C:/Users/surface/Desktop/RideFlow/run_all.sql"
-```
-
-If you prefer MySQL Workbench, open and run the SQL files in this order:
-
-00_setup.sql -> 02_schema.sql -> 03_seed.sql -> 04_triggers.sql -> 05_procedures.sql -> 06_views.sql -> 07_dcl.sql -> 08_indexes.sql -> 09_reports.sql
-
-Note: on Windows PowerShell, mysql < file.sql redirection is often unreliable. Use source ... or Workbench instead.
-
-### 3. Configure database access for Flask
-
-The app uses the values from config.py or .env. For local development, the database defaults are:
-
-- host: localhost
-- user: root
-- database: rideflow
-
-Set MYSQL_PASSWORD to your local MySQL password before running the app.
-
-### 4. Start the web app
-
-```powershell
-cd "c:\Users\surface\Desktop\RideFlow"
 python app.py
 ```
+*The Flask server starts on `http://127.0.0.1:5000` with debug mode enabled.*
 
-The Flask server starts on http://localhost:5000 with debug mode enabled.
+### 3. Start the React Frontend
+
+Open a new terminal, install Node dependencies, and start the Vite dev server:
+```powershell
+npm install
+npm run dev
+```
+*The React app starts on `http://localhost:5173`.*
 
 ## Demo Logins
 
-The login page uses demo accounts seeded in the database. The password is the user's first name, case-insensitive.
+The application is seeded with demo accounts for testing all roles. The system uses bcrypt hashing.
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | ali.raza@rideflow.pk | ali |
-| Rider | sara.ahmed@gmail.com | sara |
-| Rider | hamza.khan@gmail.com | hamza |
-| Driver | bilal.driver@gmail.com | bilal |
-| Driver | kamran.iqbal@gmail.com | kamran |
+| Admin | admin@rideflow.test | Admin1234 |
+| Rider | rider@rideflow.test | Rider1234 |
+| Driver | driver@rideflow.test | Driver123 |
+
+*(Note: You can also create a new account via the `/signup` page. Driver accounts require a license number and CNIC).*
 
 ## Main Features
 
 ### Admin
-
 - Live platform stats: users, completed rides, active rides, revenue, open complaints, online drivers
 - Revenue charts by city and by payment method
 - Driver leaderboard and top-driver listings
@@ -146,50 +123,16 @@ The login page uses demo accounts seeded in the database. The password is the us
 - Vehicle inventory view
 
 ### Rider
-
+- Interactive, dark-themed dashboard
 - Book a ride by choosing pickup, drop-off, and vehicle type
 - Automatic driver assignment for matching requests
 - Ride history with status badges
 - Rate a driver after a completed ride
-- Apply promo codes to a completed ride
 - File complaints and review complaint status
 
 ### Driver
-
 - Switch availability online/offline
 - View assigned rides and progress them from accepted to completed
 - See earnings, wallet balance, commission, and completed ride count
 - Request a payout from the wallet
 - Review rider ratings and comments
-
-## Database Objects
-
-The schema contains 11 tables:
-
-- USERS
-- USER_PHONES
-- LOCATIONS
-- DRIVERS
-- VEHICLES
-- PROMOCODES
-- RIDES
-- PAYMENTS
-- COMPLAINTS
-- RATINGS
-- USER_PROMOCODES
-
-The system also includes stored procedures, triggers, views, DCL rules, and indexes to support the dashboards and reporting queries.
-
-## API Surface
-
-app.py exposes JSON endpoints for login, logout, and role-specific actions. The main groups are:
-
-- Admin: stats, revenue charts, leaderboard, active rides, complaints, users, and vehicles
-- Rider: locations, ride history, booking, ratings, promo codes, and complaints
-- Driver: profile, toggle availability, assigned rides, ride start/complete, ratings, and payout
-
-## Notes
-
-- app.py runs with debug=True and port 5000.
-- Driver wallet credits and ride completion logic are handled by the database triggers and procedures.
-- If login fails with a database error, verify that MySQL is running and that MYSQL_PASSWORD matches your local setup.

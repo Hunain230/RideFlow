@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { FormInput } from '@/components/ui/FormInput';
 import { Button } from '@/components/ui/Button';
 import { fadeSlideUp } from '@/lib/motion';
-import { loginRequest } from '@/lib/authApi';
+import { apiSignIn } from '@/lib/api';
 
 export function SignInModal() {
   const { isSignInOpen, closeModals, openSignUp, login } = useAppStore();
@@ -26,8 +26,8 @@ export function SignInModal() {
   const onSubmit = async (data: SignInFormValues) => {
     setSubmitError('');
     try {
-      const { user } = await loginRequest(data.emailOrPhone, data.password);
-      login(user.email, user.name, user.role);
+      const { user } = await apiSignIn(data.emailOrPhone, data.password);
+      login(user.email, user.name);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Login failed. Please try again.');
     }

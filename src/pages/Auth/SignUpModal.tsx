@@ -11,7 +11,7 @@ import { FormInput } from '@/components/ui/FormInput';
 import { Button } from '@/components/ui/Button';
 import { PasswordStrength } from '@/components/shared/PasswordStrength';
 import { fadeSlideUp } from '@/lib/motion';
-import { signUpRequest } from '@/lib/authApi';
+import { apiSignUp } from '@/lib/api';
 
 const countryCodes = ['+1', '+44', '+92', '+61', '+49', '+33', '+91'];
 const roles: Array<{ key: 'rider' | 'driver'; label: string }> = [
@@ -38,17 +38,17 @@ export function SignUpModal() {
   const onSubmit = async (data: SignUpFormValues) => {
     setSubmitError('');
     try {
-      const { user } = await signUpRequest({
+      const { user } = await apiSignUp({
         fullName: data.fullName,
         email: data.email,
         countryCode: data.countryCode,
         phone: data.phone,
         password: data.password,
-        role,
+        role: role === 'driver' ? 'Driver' : 'Rider',
         licenseNumber: data.licenseNumber,
         cnic: data.cnic,
       });
-      login(user.email, user.name, user.role);
+      login(user.email, user.name);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
     }

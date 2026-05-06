@@ -20,7 +20,7 @@ function ProtectedRoute({
   const { user } = useAppStore();
 
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (user.role && !allowedRoles.includes(user.role)) {

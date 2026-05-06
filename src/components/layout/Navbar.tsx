@@ -78,7 +78,7 @@ export function Navbar() {
                 <LayoutDashboard size={16} />
                 Dashboard
               </button>
-              <Button variant="glass" size="sm" onClick={logout} className="flex items-center gap-2">
+              <Button variant="glass" size="sm" onClick={handleLogout} className="flex items-center gap-2">
                 <LogOut size={16} />
                 Sign Out
               </Button>
