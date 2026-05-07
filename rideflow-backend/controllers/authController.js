@@ -16,7 +16,7 @@ const signToken = (payload) =>
 
 // ─── POST /api/auth/register ──────────────────────────────────
 const register = asyncHandler(async (req, res) => {
-  const { firstName, lastName, email, password, role, phone } = req.body;
+  const { firstName, lastName, email, password, role, phone, phoneNumber } = req.body;
 
   if (!firstName || !lastName || !email || !password || !role) {
     return sendError(res, 'firstName, lastName, email, password, role are required.');
@@ -43,12 +43,15 @@ const register = asyncHandler(async (req, res) => {
     const userID = result.insertId;
 
     // Insert phone if provided
-    if (phone) {
+    const normalizedPhone = phone || phoneNumber;
+    if (normalizedPhone) {
       await conn.query(
         'INSERT INTO USER_PHONES (UserID, PhoneNumber) VALUES (?, ?)',
-        [userID, phone]
+        [userID, normalizedPhone]
       );
     }
+
+    let driverID = null;
 
     // If Driver — create skeleton driver profile
     if (role === 'Driver') {
@@ -61,12 +64,27 @@ const register = asyncHandler(async (req, res) => {
         `INSERT INTO DRIVERS (UserID, LicenseNumber, CNIC) VALUES (?, ?, ?)`,
         [userID, licenseNumber, cnic]
       );
+
+      const [drivers] = await conn.query('SELECT DriverID FROM DRIVERS WHERE UserID = ?', [userID]);
+      if (drivers.length) {
+        driverID = drivers[0].DriverID;
+      }
     }
 
     await conn.commit();
 
     const token = signToken({ userID, role });
-    return sendSuccess(res, { userID, role, token }, 'Registration successful', 201);
+    return sendSuccess(res, {
+      token,
+      user: {
+        userID,
+        firstName,
+        lastName,
+        email,
+        role,
+        driverID,
+      },
+    }, 'Registration successful', 201);
   } catch (err) {
     await conn.rollback();
     throw err;

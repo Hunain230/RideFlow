@@ -1,0 +1,14 @@
+{
+  "name": "rideflow",
+  "version": "1.0.0",
+  "description": "RideFlow Full-Stack Project",
+  "scripts": {
+    "dev:backend": "cd rideflow-backend && npm run dev",
+    "dev:frontend": "cd rideflow-frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "install:all": "cd rideflow-backend && npm install && cd ../rideflow-frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

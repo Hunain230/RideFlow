@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { clsx } from 'clsx';
-import { UseFormRegisterReturn } from 'react-hook-form';
+import type { UseFormRegisterReturn } from 'react-hook-form';
 
 interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -10,10 +10,6 @@ interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
   ({ label, error, className, register, ...props }, ref) => {
-    const [focused, setFocused] = useState(false);
-    // Determine if input has value to keep label floating
-    const hasValue = props.value !== undefined && props.value !== '' || props.defaultValue !== undefined && props.defaultValue !== '';
-    
     // We have to extract value manually if uncontrolled but since we use react-hook-form, 
     // the label float depends on focus or the sibling input value
     return (
@@ -23,12 +19,9 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
           {...register}
           {...props}
           onFocus={(e) => {
-            setFocused(true);
             if (props.onFocus) props.onFocus(e);
-            if (register?.onFocus) register.onFocus(e);
           }}
           onBlur={(e) => {
-            setFocused(false);
             if (props.onBlur) props.onBlur(e);
             if (register?.onBlur) register.onBlur(e);
           }}

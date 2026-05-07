@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -63,7 +63,7 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         email: data.email,
         password: data.password,
         role,
-        phoneNumber: data.phoneNumber,
+        phone: data.phoneNumber?.trim() || undefined,
       };
       if (data.isDriver) {
         payload.licenseNumber = data.licenseNumber;
@@ -73,15 +73,9 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
       const res = await authAPI.register(payload);
       if (res.data.success) {
         toast.success('Account created successfully!');
-        // Auto-login
-        const loginRes = await authAPI.login(data.email, data.password);
-        if (loginRes.data.success) {
-          setAuth(loginRes.data.data.token, loginRes.data.data.user);
-          onSuccess();
-          navigate(`/${role.toLowerCase()}`);
-        } else {
-          onSuccess(); // Registration succeeded but login failed, close modal
-        }
+        setAuth(res.data.data.token, res.data.data.user);
+        onSuccess();
+        navigate(`/${role.toLowerCase()}`);
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to register. Please try again.');
