@@ -14,6 +14,7 @@ import { fadeSlideUp } from '../../motion/presets';
 import { toast } from '../../components/ui/Toast';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { MagneticButton } from '../../components/ui/MagneticButton';
+import { CreateUserModal } from '../../components/admin/CreateUserModal';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -339,6 +340,7 @@ function OverviewTab() {
 
 function UsersTab() {
   const [users, setUsers] = useState<any[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   
   const fetchUsers = () => adminAPI.getUsers().then(r => setUsers(r.data.data)).catch(console.error);
   useEffect(() => { fetchUsers(); }, []);
@@ -350,6 +352,10 @@ function UsersTab() {
       toast.success(`User ${newStatus}`);
       fetchUsers();
     } catch (e) { toast.error('Failed to update status'); }
+  };
+
+  const handleUserCreated = () => {
+    fetchUsers();
   };
 
   return (
@@ -373,7 +379,7 @@ function UsersTab() {
               <span className="text-sm font-medium text-text-primary">{users.length} Total Users</span>
             </motion.div>
             <MagneticButton
-              onClick={() => {}}
+              onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 text-sm font-semibold bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow rounded-xl border-0 transition-all duration-300"
             >
               <span className="flex items-center gap-2">
@@ -468,6 +474,13 @@ function UsersTab() {
           </table>
         </div>
       </GlassCard>
+      
+      {/* Create User Modal */}
+      <CreateUserModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleUserCreated}
+      />
     </motion.div>
   );
 }

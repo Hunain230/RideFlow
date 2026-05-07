@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -16,6 +16,10 @@ export function Navbar({ onLoginClick, onSignupClick }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if we're on the admin dashboard
+  const isAdminDashboard = location.pathname === '/admin';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,15 +56,17 @@ export function Navbar({ onLoginClick, onSignupClick }: NavbarProps) {
           </Link>
         </div>
 
-        {/* Center - Navigation links */}
-        <nav className="hidden md:flex gap-6 absolute left-1/2 transform -translate-x-1/2">
-          {navLinks.map((link) => (
-            <a key={link.label} href={link.href} className="text-sm font-medium text-text-secondary hover:text-text-primary relative group">
-              {link.label}
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-amber-400 to-[#C2410C] transition-all duration-300 group-hover:w-full" />
-            </a>
-          ))}
-        </nav>
+        {/* Center - Navigation links (hidden on admin dashboard) */}
+        {!isAdminDashboard && (
+          <nav className="hidden md:flex gap-6 absolute left-1/2 transform -translate-x-1/2">
+            {navLinks.map((link) => (
+              <a key={link.label} href={link.href} className="text-sm font-medium text-text-secondary hover:text-text-primary relative group">
+                {link.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-amber-400 to-[#C2410C] transition-all duration-300 group-hover:w-full" />
+              </a>
+            ))}
+          </nav>
+        )}
 
         {/* Right side - User info and actions */}
         <div className="hidden md:flex items-center gap-4">
@@ -101,12 +107,12 @@ export function Navbar({ onLoginClick, onSignupClick }: NavbarProps) {
             className="md:hidden bg-bg-elevated border-b border-glass-border overflow-hidden"
           >
             <div className="px-4 py-6 flex flex-col gap-4">
-              {navLinks.map((link) => (
+              {!isAdminDashboard && navLinks.map((link) => (
                 <a key={link.label} href={link.href} className="text-text-primary font-medium" onClick={() => setMobileOpen(false)}>
                   {link.label}
                 </a>
               ))}
-              <hr className="border-glass-border my-2" />
+              {!isAdminDashboard && <hr className="border-glass-border my-2" />}
               {isAuthenticated() && user ? (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
