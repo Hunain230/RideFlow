@@ -44,21 +44,25 @@ export function Navbar({ onLoginClick, onSignupClick }: NavbarProps) {
       style={{ height: '72px' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
-        <div className="flex items-center gap-8">
+        {/* Left side - Logo only */}
+        <div className="flex items-center">
           <Link to="/" className="text-2xl font-display font-bold">
             <span className="text-text-primary">Ride</span>
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-[#C2410C]">Flow</span>
           </Link>
-          <nav className="hidden md:flex gap-6">
-            {navLinks.map((link) => (
-              <a key={link.label} href={link.href} className="text-sm font-medium text-text-secondary hover:text-text-primary relative group">
-                {link.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-amber-400 to-[#C2410C] transition-all duration-300 group-hover:w-full" />
-              </a>
-            ))}
-          </nav>
         </div>
 
+        {/* Center - Navigation links */}
+        <nav className="hidden md:flex gap-6 absolute left-1/2 transform -translate-x-1/2">
+          {navLinks.map((link) => (
+            <a key={link.label} href={link.href} className="text-sm font-medium text-text-secondary hover:text-text-primary relative group">
+              {link.label}
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-amber-400 to-[#C2410C] transition-all duration-300 group-hover:w-full" />
+            </a>
+          ))}
+        </nav>
+
+        {/* Right side - User info and actions */}
         <div className="hidden md:flex items-center gap-4">
           {isAuthenticated() && user ? (
             <div className="flex items-center gap-4">

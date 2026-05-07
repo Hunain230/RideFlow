@@ -6,7 +6,7 @@ interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'Admin' | 'Rider' | 'Driver';
+  role: 'Admin' | 'Customer' | 'Driver';
   driverID?: number | null;
 }
 

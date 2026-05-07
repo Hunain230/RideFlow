@@ -35,9 +35,10 @@ const requireRole = (...roles) => (req, res, next) => {
   next();
 };
 
-const requireAdmin  = requireRole('Admin');
-const requireRider  = requireRole('Rider');
-const requireDriver = requireRole('Driver');
-const requireAny    = requireRole('Admin', 'Rider', 'Driver');
+const requireAdmin   = requireRole('Admin');
+const requireCustomer = requireRole('Customer');
+const requireRider   = requireRole('Rider');
+const requireDriver  = requireRole('Driver');
+const requireAny     = requireRole('Admin', 'Customer', 'Driver');
 
-module.exports = { authenticate, requireAdmin, requireRider, requireDriver, requireAny };
+module.exports = { authenticate, requireAdmin, requireCustomer, requireRider, requireDriver, requireAny };

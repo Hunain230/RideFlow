@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS PROMOCODES (
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS RIDES (
     RideID            INT           AUTO_INCREMENT PRIMARY KEY,
-    RiderID           INT           NOT NULL,   -- UserID of the rider
+    RiderID          INT           NOT NULL,   -- UserID of the rider
     DriverID          INT,
     VehicleID         INT,
     PickupLocationID  INT           NOT NULL,
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS RIDES (
     StartTime         DATETIME,
     EndTime           DATETIME,
     SurgeMultiplier   DECIMAL(3,2)  DEFAULT 1.00,
-    FOREIGN KEY (RiderID)           REFERENCES USERS(UserID),
+    FOREIGN KEY (RiderID)          REFERENCES USERS(UserID),
     FOREIGN KEY (DriverID)          REFERENCES DRIVERS(DriverID),
     FOREIGN KEY (VehicleID)         REFERENCES VEHICLES(VehicleID),
     FOREIGN KEY (PickupLocationID)  REFERENCES LOCATIONS(LocationID),
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS PAYMENTS (
     TransactionDate TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
     DiscountApplied DECIMAL(10,2) DEFAULT 0.00,
     FOREIGN KEY (RideID)       REFERENCES RIDES(RideID),
-    FOREIGN KEY (RiderID)      REFERENCES USERS(UserID),
+    FOREIGN KEY (RiderID)         REFERENCES USERS(UserID),
     FOREIGN KEY (PromoCodeID)  REFERENCES PROMOCODES(PromoCodeID)
 );
 

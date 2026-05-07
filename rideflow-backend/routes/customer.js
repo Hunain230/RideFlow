@@ -1,15 +1,15 @@
-// routes/rider.js
+// routes/customer.js
 const express = require('express');
 const router = express.Router();
-const { authenticate, requireRider } = require('../middleware/auth');
-const C = require('../controllers/riderController');
+const { authenticate, requireCustomer } = require('../middleware/auth');
+const C = require('../controllers/customerController');
 
 // Apply authentication and role-based middleware to all routes
 router.use(authenticate);
-router.use(requireRider);
+router.use(requireCustomer);
 
-// All rider routes require JWT + Rider role
-router.use(authenticate, requireRider);
+// All customer routes require JWT + Customer role
+router.use(authenticate, requireCustomer);
 
 // ─── Profile ──────────────────────────────────────────────────
 router.get   ('/profile',                   C.getProfile);

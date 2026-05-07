@@ -17,10 +17,15 @@ app.get('/health', (_req, res) =>
 );
 
 // ─── Routes ───────────────────────────────────────────────────
-app.use('/api/auth',   require('./routes/auth'));
-app.use('/api/admin',  require('./routes/admin'));
-app.use('/api/rider',  require('./routes/rider'));
-app.use('/api/driver', require('./routes/driver'));
+const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
+const customerRoutes = require('./routes/customer');
+const driverRoutes = require('./routes/driver');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/customer', customerRoutes);
+app.use('/api/driver', driverRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) =>
