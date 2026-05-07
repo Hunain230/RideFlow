@@ -41,7 +41,7 @@ export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
         navigate(`/${role}`);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to sign in. Please try again.');
+      toast.error(err.response?.data?.error || 'Failed to sign in. Please try again.');
     } finally {
       setLoading(false);
     }

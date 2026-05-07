@@ -7,9 +7,21 @@ import { DriverDashboard } from './pages/driver/DriverDashboard';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 
 function ProtectedRoute({ role, children }: { role?: string, children: React.ReactNode }) {
-  const { user, isAuthenticated } = useAuthStore();
-  if (!isAuthenticated()) return <Navigate to="/" replace />;
-  if (role && user?.role !== role) return <Navigate to="/" replace />;
+  const token = useAuthStore(state => state.token);
+  const user = useAuthStore(state => state.user);
+
+  console.log('ProtectedRoute:', { path: window.location.pathname, role, userRole: user?.role, hasToken: !!token });
+
+  if (!token) {
+    console.log('No token, redirecting to /');
+    return <Navigate to="/" replace />;
+  }
+
+  if (role && user?.role !== role) {
+    console.log('Role mismatch, redirecting to /', { expected: role, actual: user?.role });
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 }
 

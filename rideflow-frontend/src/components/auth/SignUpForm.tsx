@@ -89,7 +89,7 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         navigate(`/${role.toLowerCase()}`);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to register. Please try again.');
+      toast.error(err.response?.data?.error || 'Failed to register. Please try again.');
     } finally {
       setLoading(false);
     }
