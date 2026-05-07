@@ -21,11 +21,13 @@ const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const customerRoutes = require('./routes/customer');
 const driverRoutes = require('./routes/driver');
+const riderRoutes = require('./routes/rider');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/driver', driverRoutes);
+app.use('/api/rider', riderRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) =>

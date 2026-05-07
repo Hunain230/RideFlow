@@ -78,7 +78,7 @@ const updateUser = asyncHandler(async (req, res) => {
 // DELETE /api/admin/users/:id
 const deleteUser = asyncHandler(async (req, res) => {
   // Check if user has associated data
-  const [rides] = await db.query('SELECT COUNT(*) AS count FROM RIDES WHERE RiderID = ? OR DriverID = ?', [req.params.id, req.params.id]);
+  const [rides] = await db.query('SELECT COUNT(*) AS count FROM RIDES WHERE CustomerID = ? OR DriverID = ?', [req.params.id, req.params.id]);
   const [driver] = await db.query('SELECT DriverID FROM DRIVERS WHERE UserID = ?', [req.params.id]);
   
   if (rides[0].count > 0) {
@@ -294,7 +294,7 @@ const getAllRides = asyncHandler(async (req, res) => {
            pu.City AS PickupCity, du.City AS DropoffCity,
            v.Make, v.Model, v.LicensePlate
     FROM RIDES r
-    JOIN USERS ru ON r.RiderID = ru.UserID
+    JOIN USERS ru ON r.CustomerID = ru.UserID
     LEFT JOIN DRIVERS d ON r.DriverID = d.DriverID
     LEFT JOIN USERS du ON d.UserID = du.UserID
     LEFT JOIN LOCATIONS pu ON r.PickupLocationID = pu.LocationID

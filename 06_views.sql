@@ -117,7 +117,7 @@ SELECT
     ri.StartTime,
     ri.SurgeMultiplier
 FROM   RIDES     ri
-JOIN   USERS     ru ON ri.RiderID  = ru.UserID
+JOIN   USERS     ru ON ri.CustomerID  = ru.UserID
 JOIN   DRIVERS   d  ON ri.DriverID = d.DriverID
 JOIN   USERS     du ON d.UserID    = du.UserID
 LEFT JOIN VEHICLES v  ON ri.VehicleID = v.VehicleID   -- FIX: LEFT JOIN

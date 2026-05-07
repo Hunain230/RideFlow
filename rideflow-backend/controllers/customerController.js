@@ -158,7 +158,7 @@ const requestRide = asyncHandler(async (req, res) => {
   const finalFare = Math.round(calculatedFare * surgeMultiplier * 100) / 100;
 
   const [result] = await db.query(
-    `INSERT INTO RIDES (RiderID, PickupLocationID, DropoffLocationID, RideStatus, 
+    `INSERT INTO RIDES (CustomerID, PickupLocationID, DropoffLocationID, RideStatus, 
                        Fare, Distance, ScheduledTime, SurgeMultiplier)
      VALUES (?, ?, ?, 'Requested', ?, ?, ?, ?)`,
     [req.user.userID, pickupLocationID, dropoffLocationID, 
@@ -187,7 +187,7 @@ const getRideHistory = asyncHandler(async (req, res) => {
     JOIN LOCATIONS dl ON r.DropoffLocationID = dl.LocationID
     LEFT JOIN DRIVERS d ON r.DriverID = d.DriverID
     LEFT JOIN USERS u ON d.UserID = u.UserID
-    WHERE r.RiderID = ?`;
+    WHERE r.CustomerID = ?`;
   const params = [req.user.userID];
   if (status) { sql += ' AND r.RideStatus = ?'; params.push(status); }
   sql += ' ORDER BY r.RideID DESC';
@@ -203,7 +203,7 @@ const getRideDetail = asyncHandler(async (req, res) => {
      FROM RIDES r
      JOIN LOCATIONS pl ON r.PickupLocationID  = pl.LocationID
      JOIN LOCATIONS dl ON r.DropoffLocationID = dl.LocationID
-     WHERE r.RideID = ? AND r.RiderID = ?`,
+     WHERE r.RideID = ? AND r.CustomerID = ?`,
     [req.params.id, req.user.userID]
   );
   if (!rows.length) return sendError(res, 'Ride not found.', 404);
@@ -214,7 +214,7 @@ const getRideDetail = asyncHandler(async (req, res) => {
 const cancelRide = asyncHandler(async (req, res) => {
   const [result] = await db.query(
     `UPDATE RIDES SET RideStatus = 'Cancelled'
-     WHERE RideID = ? AND RiderID = ? AND RideStatus = 'Requested'`,
+     WHERE RideID = ? AND CustomerID = ? AND RideStatus = 'Requested'`,
     [req.params.id, req.user.userID]
   );
   if (!result.affectedRows) {
@@ -233,13 +233,13 @@ const makePayment = asyncHandler(async (req, res) => {
   }
   // Ensure ride belongs to this rider
   const [[ride]] = await db.query(
-    'SELECT RideID FROM RIDES WHERE RideID = ? AND RiderID = ?',
+    'SELECT RideID FROM RIDES WHERE RideID = ? AND CustomerID = ?',
     [rideID, req.user.userID]
   );
   if (!ride) return sendError(res, 'Ride not found or not yours.', 404);
 
   const [result] = await db.query(
-    `INSERT INTO PAYMENTS (RideID, RiderID, Amount, PaymentMethod, PaymentStatus, DiscountApplied)
+    `INSERT INTO PAYMENTS (RideID, CustomerID, Amount, PaymentMethod, PaymentStatus, DiscountApplied)
      VALUES (?, ?, ?, ?, 'Paid', 0.00)`,
     [rideID, req.user.userID, amount, paymentMethod]
   );
@@ -255,7 +255,7 @@ const getPaymentHistory = asyncHandler(async (req, res) => {
             pc.Code AS PromoCode
      FROM PAYMENTS p
      LEFT JOIN PROMOCODES pc ON p.PromoCodeID = pc.PromoCodeID
-     WHERE p.RiderID = ? ORDER BY p.TransactionDate DESC`,
+     WHERE p.CustomerID = ? ORDER BY p.TransactionDate DESC`,
     [req.user.userID]
   );
   return sendSuccess(res, rows);
@@ -310,7 +310,7 @@ const rateDriver = asyncHandler(async (req, res) => {
 
   // Verify ride completed & belongs to this rider
   const [[ride]] = await db.query(
-    `SELECT RideID FROM RIDES WHERE RideID = ? AND RiderID = ? AND RideStatus = 'Completed'`,
+    `SELECT RideID FROM RIDES WHERE RideID = ? AND CustomerID = ? AND RideStatus = 'Completed'`,
     [rideID, req.user.userID]
   );
   if (!ride) return sendError(res, 'Ride not found or not completed.', 404);

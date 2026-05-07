@@ -27,7 +27,7 @@ function ProtectedRoute({ role, children }: { role?: string, children: React.Rea
     return <Navigate to="/" replace />;
   }
 
-  if (role && user?.role?.toLowerCase() !== role.toLowerCase()) {
+  if (role && user?.role && role.toLowerCase() !== user.role.toLowerCase()) {
     console.log('❌ Role mismatch, redirecting to /');
     console.log('Expected:', role, 'Got:', user?.role);
     return <Navigate to="/" replace />;
@@ -43,6 +43,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/customer" element={<ProtectedRoute role="Rider"><CustomerDashboard /></ProtectedRoute>} />
+        <Route path="/rider" element={<ProtectedRoute role="Rider"><CustomerDashboard /></ProtectedRoute>} />
         <Route path="/driver" element={<ProtectedRoute role="Driver"><DriverDashboard /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute role="Admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />

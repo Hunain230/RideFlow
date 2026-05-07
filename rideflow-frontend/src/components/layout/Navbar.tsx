@@ -76,7 +76,10 @@ export function Navbar({ onLoginClick, onSignupClick }: NavbarProps) {
                 <span className="text-sm font-medium text-text-primary">{user.firstName} {user.lastName}</span>
                 <Badge variant="info" className="scale-75 origin-right -mt-0.5">{user.role}</Badge>
               </div>
-              <Button variant="gradient-border" size="sm" onClick={() => navigate(`/${user.role.toLowerCase()}`)}>
+              <Button variant="gradient-border" size="sm" onClick={() => {
+                const dashboardRoute = user.role.toLowerCase() === 'rider' ? '/customer' : `/${user.role.toLowerCase()}`;
+                navigate(dashboardRoute);
+              }}>
                 Dashboard
               </Button>
               <Button variant="icon" onClick={handleLogout} title="Logout">
@@ -119,7 +122,11 @@ export function Navbar({ onLoginClick, onSignupClick }: NavbarProps) {
                     <span>{user.firstName} {user.lastName}</span>
                     <Badge variant="info">{user.role}</Badge>
                   </div>
-                  <Button variant="gradient-border" onClick={() => { navigate(`/${user.role.toLowerCase()}`); setMobileOpen(false); }}>
+                  <Button variant="gradient-border" onClick={() => { 
+                    const dashboardRoute = user.role.toLowerCase() === 'rider' ? '/customer' : `/${user.role.toLowerCase()}`;
+                    navigate(dashboardRoute); 
+                    setMobileOpen(false); 
+                  }}>
                     Dashboard
                   </Button>
                   <Button variant="glass" onClick={() => { handleLogout(); setMobileOpen(false); }}>

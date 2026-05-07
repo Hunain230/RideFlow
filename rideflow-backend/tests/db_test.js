@@ -20,7 +20,7 @@ async function runTests() {
     if (rider && driver && pickup) {
       // 1. Insert Ride
       const [ride] = await db.query(
-        `INSERT INTO RIDES (RiderID, DriverID, PickupLocationID, DropoffLocationID, RideStatus, Fare) 
+        `INSERT INTO RIDES (CustomerID, DriverID, PickupLocationID, DropoffLocationID, RideStatus, Fare) 
          VALUES (?, ?, ?, ?, 'InProgress', 500)`,
         [rider.UserID, driver.DriverID, pickup.LocationID, pickup.LocationID]
       );
@@ -28,7 +28,7 @@ async function runTests() {
       
       // 2. Insert Payment
       await db.query(
-        `INSERT INTO PAYMENTS (RideID, RiderID, Amount, PaymentMethod, PaymentStatus) 
+        `INSERT INTO PAYMENTS (RideID, CustomerID, Amount, PaymentMethod, PaymentStatus) 
          VALUES (?, ?, 500, 'Cash', 'Paid')`,
         [rideId, rider.UserID]
       );

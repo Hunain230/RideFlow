@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS PROMOCODES (
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS RIDES (
     RideID            INT           AUTO_INCREMENT PRIMARY KEY,
-    RiderID          INT           NOT NULL,   -- UserID of the rider
+    CustomerID          INT           NOT NULL,   -- UserID of the rider
     DriverID          INT,
     VehicleID         INT,
     PickupLocationID  INT           NOT NULL,
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS RIDES (
     StartTime         DATETIME,
     EndTime           DATETIME,
     SurgeMultiplier   DECIMAL(3,2)  DEFAULT 1.00,
-    FOREIGN KEY (RiderID)          REFERENCES USERS(UserID),
+    FOREIGN KEY (CustomerID)          REFERENCES USERS(UserID),
     FOREIGN KEY (DriverID)          REFERENCES DRIVERS(DriverID),
     FOREIGN KEY (VehicleID)         REFERENCES VEHICLES(VehicleID),
     FOREIGN KEY (PickupLocationID)  REFERENCES LOCATIONS(LocationID),
@@ -136,14 +136,14 @@ CREATE TABLE IF NOT EXISTS PAYMENTS (
     PaymentID       INT           AUTO_INCREMENT PRIMARY KEY,
     RideID          INT           UNIQUE NOT NULL,
     PromoCodeID     INT,
-    RiderID         INT           NOT NULL,
+    CustomerID         INT           NOT NULL,
     Amount          DECIMAL(10,2) NOT NULL,
     PaymentMethod   ENUM('Cash', 'CreditCard', 'Wallet') NOT NULL,
     PaymentStatus   ENUM('Paid', 'Pending', 'Failed', 'Refunded') DEFAULT 'Pending',
     TransactionDate TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
     DiscountApplied DECIMAL(10,2) DEFAULT 0.00,
     FOREIGN KEY (RideID)       REFERENCES RIDES(RideID),
-    FOREIGN KEY (RiderID)         REFERENCES USERS(UserID),
+    FOREIGN KEY (CustomerID)         REFERENCES USERS(UserID),
     FOREIGN KEY (PromoCodeID)  REFERENCES PROMOCODES(PromoCodeID)
 );
 

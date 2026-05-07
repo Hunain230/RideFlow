@@ -10,7 +10,7 @@ import { StatCard } from '../../components/ui/StatCard';
 import { Badge } from '../../components/ui/Badge';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { toast } from '../../components/ui/Toast';
-import { customerAPI } from '../../lib/customer';
+import { riderAPI } from '../../lib/rider';
 import { fadeSlideUp } from '../../motion/presets';
 
 export function CustomerDashboard() {
@@ -84,8 +84,8 @@ function BookTab() {
   useEffect(() => {
     // Load locations and vehicles
     Promise.all([
-      customerAPI.getLocations(),
-      customerAPI.getVehicles()
+      riderAPI.getLocations(),
+      riderAPI.getVehicles()
     ]).then(([locationsRes, vehiclesRes]) => {
       setLocations(locationsRes.data.data);
       setVehicles(vehiclesRes.data.data);
@@ -98,7 +98,7 @@ function BookTab() {
     }).catch(() => {});
     
     // Check if rider already has an active ride
-    customerAPI.getRideHistory().then(res => {
+    riderAPI.getRideHistory().then(res => {
       const active = res.data.data.find((r: any) => ['Requested', 'Accepted', 'InProgress'].includes(r.RideStatus));
       if (active) {
         setActiveRideId(active.RideID);
@@ -113,7 +113,7 @@ function BookTab() {
     if (step === 4 && activeRideId) {
       interval = setInterval(async () => {
         try {
-          const res = await customerAPI.getRideDetail(activeRideId);
+          const res = await riderAPI.getRideDetail(activeRideId);
           setRideState(res.data.data);
           if (res.data.data.RideStatus === 'Completed' || res.data.data.RideStatus === 'Cancelled') {
             clearInterval(interval);
@@ -129,7 +129,7 @@ function BookTab() {
     if (!pickup || !dropoff || !selectedVehicle) return toast.error('Please complete all selections');
     setLoading(true);
     try {
-      const res = await customerAPI.requestRide({
+      const res = await riderAPI.requestRide({
         pickupLocationID: pickup,
         dropoffLocationID: dropoff,
         vehicleType: selectedVehicle.Type
@@ -147,7 +147,7 @@ function BookTab() {
   const handleCancel = async () => {
     if (!activeRideId) return;
     try {
-      await customerAPI.cancelRide(activeRideId);
+      await riderAPI.cancelRide(activeRideId);
       toast.success('Ride cancelled');
       setStep(1);
       setActiveRideId(null);
@@ -425,7 +425,7 @@ function BookTab() {
                     <p className="text-sm text-text-muted">Dropoff: {locations.find(l => l.LocationID === dropoff)?.LocationName}</p>
                   </div>
                   <div className="flex gap-4 justify-center">
-                    <Button variant="glass" onClick={() => customerAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>
+                    <Button variant="glass" onClick={() => riderAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>
                     <Button variant="glass" className="text-error border-error/30 hover:border-error" onClick={handleCancel}>Cancel Request</Button>
                   </div>
                 </GlassCard>
@@ -442,7 +442,7 @@ function BookTab() {
                     {rideState.DriverName && <p className="text-sm text-amber-600 font-medium mt-2">Driver: {rideState.DriverName}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Button variant="glass" onClick={() => customerAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>
+                    <Button variant="glass" onClick={() => riderAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>
                     <Button variant="glass" className="text-error border-error/30 hover:border-error" onClick={handleCancel}>Cancel Ride</Button>
                   </div>
                 </GlassCard>
@@ -458,7 +458,7 @@ function BookTab() {
                     <p className="text-sm text-text-muted">Destination: {locations.find(l => l.LocationID === dropoff)?.LocationName}</p>
                     {rideState.DriverName && <p className="text-sm text-amber-600 font-medium mt-2">Driver: {rideState.DriverName}</p>}
                   </div>
-                  <Button variant="glass" onClick={() => customerAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>
+                  <Button variant="glass" onClick={() => riderAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>
                 </GlassCard>
               ) : (
                 <GlassCard tier={3} className="max-w-2xl mx-auto p-8 text-center backdrop-blur-xl bg-glass-white border-glass-border shadow-glow-lg">
@@ -498,7 +498,7 @@ function TripsTab() {
   const [ratingComment, setRatingComment] = useState('');
 
   useEffect(() => {
-    customerAPI.getRideHistory().then(res => {
+    riderAPI.getRideHistory().then(res => {
       setRides(res.data.data);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -509,14 +509,14 @@ function TripsTab() {
 
   const handlePayment = async (rideId: number) => {
     try {
-      await customerAPI.makePayment({
+      await riderAPI.makePayment({
         rideID: rideId,
         amount: rides.find(r => r.RideID === rideId)?.Fare,
         paymentMethod: 'CreditCard'
       });
       toast.success('Payment processed successfully');
       // Refresh rides
-      const res = await customerAPI.getRideHistory();
+      const res = await riderAPI.getRideHistory();
       setRides(res.data.data);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Payment failed');
@@ -526,7 +526,7 @@ function TripsTab() {
   const handleRating = async () => {
     if (!selectedRide) return;
     try {
-      await customerAPI.rateDriver({
+      await riderAPI.rateDriver({
         rideID: selectedRide.RideID,
         driverUserID: selectedRide.DriverUserID,
         score: rating,
@@ -670,9 +670,9 @@ function ProfileTab() {
   useEffect(() => {
     // Load profile and promos
     Promise.all([
-      customerAPI.getProfile(),
-      customerAPI.getMyPromos(),
-      customerAPI.getComplaints()
+      riderAPI.getProfile(),
+      riderAPI.getMyPromos(),
+      riderAPI.getComplaints()
     ]).then(([profileRes, promosRes, complaintsRes]) => {
       setProfile(profileRes.data.data);
       setPromos(promosRes.data.data);
@@ -690,11 +690,11 @@ function ProfileTab() {
 
   const handleUpdateProfile = async () => {
     try {
-      await customerAPI.updateProfile(editForm);
+      await riderAPI.updateProfile(editForm);
       toast.success('Profile updated successfully');
       setShowEditModal(false);
       // Refresh profile
-      const res = await customerAPI.getProfile();
+      const res = await riderAPI.getProfile();
       setProfile(res.data.data);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Profile update failed');
@@ -707,12 +707,12 @@ function ProfileTab() {
       return;
     }
     try {
-      await customerAPI.fileComplaint(complaintForm);
+      await riderAPI.fileComplaint(complaintForm);
       toast.success('Complaint filed successfully');
       setShowComplaintModal(false);
       setComplaintForm({ rideID: '', description: '' });
       // Refresh complaints
-      const res = await customerAPI.getComplaints();
+      const res = await riderAPI.getComplaints();
       setComplaints(res.data.data);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to file complaint');

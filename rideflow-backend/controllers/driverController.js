@@ -102,7 +102,7 @@ const getIncomingRides = asyncHandler(async (req, res) => {
             dl.City AS DropoffCity, r.Fare,
             r.ScheduledTime, r.SurgeMultiplier
      FROM RIDES r
-     JOIN USERS u ON r.RiderID = u.UserID
+     JOIN USERS u ON r.CustomerID = u.UserID
      JOIN LOCATIONS pl ON r.PickupLocationID  = pl.LocationID
      JOIN LOCATIONS dl ON r.DropoffLocationID = dl.LocationID
      WHERE r.RideStatus = 'Requested'
@@ -181,7 +181,7 @@ const getMyRides = asyncHandler(async (req, res) => {
            pl.City AS PickupCity, dl.City AS DropoffCity,
            r.Fare, r.Distance, r.RideStatus, r.StartTime, r.EndTime
     FROM RIDES r
-    JOIN USERS u ON r.RiderID = u.UserID
+    JOIN USERS u ON r.CustomerID = u.UserID
     JOIN LOCATIONS pl ON r.PickupLocationID  = pl.LocationID
     JOIN LOCATIONS dl ON r.DropoffLocationID = dl.LocationID
     WHERE r.DriverID = ?`;
