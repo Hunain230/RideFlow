@@ -3,6 +3,8 @@
 
 const db = require('../config/db');
 const { asyncHandler, sendSuccess, sendError } = require('../utils/helpers');
+const wsServer = require('../utils/websocket');
+const { createNotification } = require('./notificationController');
 
 // ─── Profile ──────────────────────────────────────────────────
 
@@ -164,6 +166,24 @@ const requestRide = asyncHandler(async (req, res) => {
     [req.user.userID, pickupLocationID, dropoffLocationID, 
      finalFare, distance, scheduledTime || null, surgeMultiplier]
   );
+
+  // Broadcast ride update via WebSocket
+  wsServer.broadcastRideUpdate(result.insertId, req.user.userID, {
+    status: 'Requested',
+    message: 'Finding your driver...',
+    fare: finalFare,
+    distance: distance,
+    surgeMultiplier: surgeMultiplier
+  });
+
+  // Create notification for ride request
+  createNotification(
+    req.user.userID,
+    'Ride Requested',
+    `Your ${vehicleType} ride has been requested. We're finding you a driver.`,
+    'RideUpdate',
+    `/customer?ride=${result.insertId}`
+  ).catch(err => console.error('Failed to create notification:', err));
   
   return sendSuccess(res, { 
     rideID: result.insertId, 
@@ -302,23 +322,33 @@ const getMyPromoCodes = asyncHandler(async (req, res) => {
 
 // POST /api/rider/ratings
 const rateDriver = asyncHandler(async (req, res) => {
-  const { rideID, driverUserID, score, comment } = req.body;
-  if (!rideID || !driverUserID || !score) {
-    return sendError(res, 'rideID, driverUserID, score are required.');
+  const { rideID, score, comment } = req.body;
+  if (!rideID || !score) {
+    return sendError(res, 'rideID and score are required.');
   }
   if (score < 1 || score > 5) return sendError(res, 'Score must be between 1 and 5.');
 
-  // Verify ride completed & belongs to this rider
+  // Verify ride completed & belongs to this rider, and get driver info
   const [[ride]] = await db.query(
-    `SELECT RideID FROM RIDES WHERE RideID = ? AND CustomerID = ? AND RideStatus = 'Completed'`,
+    `SELECT r.RideID, d.UserID AS DriverUserID 
+     FROM RIDES r 
+     JOIN DRIVERS d ON r.DriverID = d.DriverID 
+     WHERE r.RideID = ? AND r.CustomerID = ? AND r.RideStatus = 'Completed'`,
     [rideID, req.user.userID]
   );
   if (!ride) return sendError(res, 'Ride not found or not completed.', 404);
 
+  // Check if already rated
+  const [[existingRating]] = await db.query(
+    'SELECT RideID FROM RATINGS WHERE RideID = ? AND RatedBy = ?',
+    [rideID, req.user.userID]
+  );
+  if (existingRating) return sendError(res, 'You have already rated this ride.', 400);
+
   await db.query(
     `INSERT INTO RATINGS (RideID, RatedBy, RatedUserID, Score, Comment)
      VALUES (?, ?, ?, ?, ?)`,
-    [rideID, req.user.userID, driverUserID, score, comment || null]
+    [rideID, req.user.userID, ride.DriverUserID, score, comment || null]
   );
   // Trigger trg_SuspendLowRatedDriver may fire here automatically
   return sendSuccess(res, null, 'Rating submitted', 201);
@@ -369,6 +399,203 @@ const calculateSurgeMultiplier = async (locationID, vehicleType) => {
   return 1.0; // Normal pricing
 };
 
+// ─── Saved Locations ───────────────────────────────────────────────
+
+// GET /api/rider/saved-locations
+const getSavedLocations = asyncHandler(async (req, res) => {
+  const [rows] = await db.query(
+    `SELECT sl.*, l.City, l.Street 
+     FROM SAVED_LOCATIONS sl 
+     LEFT JOIN LOCATIONS l ON sl.LocationID = l.LocationID 
+     WHERE sl.UserID = ? ORDER BY sl.IsDefault DESC, sl.CreatedAt DESC`,
+    [req.user.userID]
+  );
+  return sendSuccess(res, rows);
+});
+
+// POST /api/rider/saved-locations
+const addSavedLocation = asyncHandler(async (req, res) => {
+  const { locationName, address, locationType, locationID, latitude, longitude, isDefault } = req.body;
+  if (!locationName || !address) {
+    return sendError(res, 'locationName and address are required.');
+  }
+
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // If setting as default, unset other defaults
+    if (isDefault) {
+      await conn.query('UPDATE SAVED_LOCATIONS SET IsDefault = FALSE WHERE UserID = ?', [req.user.userID]);
+    }
+
+    const [result] = await conn.query(
+      `INSERT INTO SAVED_LOCATIONS (UserID, LocationName, Address, LocationType, LocationID, Latitude, Longitude, IsDefault)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.user.userID, locationName, address, locationType || 'Other', locationID || null, latitude || null, longitude || null, isDefault || false]
+    );
+
+    await conn.commit();
+    return sendSuccess(res, { savedLocationID: result.insertId }, 'Location saved', 201);
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+});
+
+// PATCH /api/rider/saved-locations/:id
+const updateSavedLocation = asyncHandler(async (req, res) => {
+  const { locationName, address, locationType, isDefault } = req.body;
+  const savedLocationID = req.params.id;
+
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // If setting as default, unset other defaults
+    if (isDefault) {
+      await conn.query('UPDATE SAVED_LOCATIONS SET IsDefault = FALSE WHERE UserID = ?', [req.user.userID]);
+    }
+
+    const fields = [];
+    const values = [];
+    if (locationName) { fields.push('LocationName = ?'); values.push(locationName); }
+    if (address) { fields.push('Address = ?'); values.push(address); }
+    if (locationType) { fields.push('LocationType = ?'); values.push(locationType); }
+    if (isDefault !== undefined) { fields.push('IsDefault = ?'); values.push(isDefault); }
+
+    if (fields.length === 0) {
+      await conn.rollback();
+      return sendError(res, 'No fields to update.');
+    }
+
+    values.push(savedLocationID, req.user.userID);
+    await conn.query(
+      `UPDATE SAVED_LOCATIONS SET ${fields.join(', ')} WHERE SavedLocationID = ? AND UserID = ?`,
+      values
+    );
+
+    await conn.commit();
+    return sendSuccess(res, null, 'Location updated');
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+});
+
+// DELETE /api/rider/saved-locations/:id
+const deleteSavedLocation = asyncHandler(async (req, res) => {
+  const [result] = await db.query(
+    'DELETE FROM SAVED_LOCATIONS WHERE SavedLocationID = ? AND UserID = ?',
+    [req.params.id, req.user.userID]
+  );
+  if (!result.affectedRows) {
+    return sendError(res, 'Location not found.', 404);
+  }
+  return sendSuccess(res, null, 'Location deleted');
+});
+
+// ─── Safety Features ───────────────────────────────────────────────
+
+// POST /api/rider/sos
+const triggerSOS = asyncHandler(async (req, res) => {
+  const { rideID, locationLat, locationLng } = req.body;
+  
+  const [result] = await db.query(
+    `INSERT INTO SAFETY_ALERTS (UserID, RideID, AlertType, AlertData, LocationLat, LocationLng)
+     VALUES (?, ?, 'SOS', ?, ?, ?)`,
+    [req.user.userID, rideID || null, JSON.stringify({ timestamp: new Date() }), locationLat || null, locationLng || null]
+  );
+
+  // TODO: Send emergency SMS to contacts, notify emergency services
+  // For now, just log the alert
+  
+  return sendSuccess(res, { alertID: result.insertId }, 'SOS alert triggered', 201);
+});
+
+// POST /api/rider/share-trip
+const shareTrip = asyncHandler(async (req, res) => {
+  const { rideID, shareWith, message } = req.body;
+  if (!rideID || !shareWith) {
+    return sendError(res, 'rideID and shareWith are required.');
+  }
+
+  // Verify ride belongs to this rider
+  const [[ride]] = await db.query(
+    'SELECT RideID FROM RIDES WHERE RideID = ? AND CustomerID = ?',
+    [rideID, req.user.userID]
+  );
+  if (!ride) return sendError(res, 'Ride not found.', 404);
+
+  const [result] = await db.query(
+    `INSERT INTO SAFETY_ALERTS (UserID, RideID, AlertType, AlertData)
+     VALUES (?, ?, 'ShareTrip', ?)`,
+    [req.user.userID, rideID, JSON.stringify({ shareWith, message, timestamp: new Date() })]
+  );
+
+  // TODO: Send share link via SMS/email
+  // For now, just log the share
+
+  return sendSuccess(res, { alertID: result.insertId, shareLink: `https://rideflow.app/share/${result.insertId}` }, 'Trip shared', 201);
+});
+
+// GET /api/rider/emergency-contacts
+const getEmergencyContacts = asyncHandler(async (req, res) => {
+  const [rows] = await db.query(
+    'SELECT * FROM EMERGENCY_CONTACTS WHERE UserID = ? ORDER BY IsPrimary DESC, ContactName ASC',
+    [req.user.userID]
+  );
+  return sendSuccess(res, rows);
+});
+
+// POST /api/rider/emergency-contacts
+const addEmergencyContact = asyncHandler(async (req, res) => {
+  const { contactName, contactPhone, contactEmail, contactRelation, isPrimary } = req.body;
+  if (!contactName || !contactPhone) {
+    return sendError(res, 'contactName and contactPhone are required.');
+  }
+
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // If setting as primary, unset other primaries
+    if (isPrimary) {
+      await conn.query('UPDATE EMERGENCY_CONTACTS SET IsPrimary = FALSE WHERE UserID = ?', [req.user.userID]);
+    }
+
+    const [result] = await conn.query(
+      `INSERT INTO EMERGENCY_CONTACTS (UserID, ContactName, ContactPhone, ContactEmail, ContactRelation, IsPrimary)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [req.user.userID, contactName, contactPhone, contactEmail || null, contactRelation || null, isPrimary || false]
+    );
+
+    await conn.commit();
+    return sendSuccess(res, { contactID: result.insertId }, 'Emergency contact added', 201);
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+});
+
+// DELETE /api/rider/emergency-contacts/:id
+const deleteEmergencyContact = asyncHandler(async (req, res) => {
+  const [result] = await db.query(
+    'DELETE FROM EMERGENCY_CONTACTS WHERE ContactID = ? AND UserID = ?',
+    [req.params.id, req.user.userID]
+  );
+  if (!result.affectedRows) {
+    return sendError(res, 'Emergency contact not found.', 404);
+  }
+  return sendSuccess(res, null, 'Emergency contact deleted');
+});
+
 module.exports = {
   getProfile, updateProfile, addPhone, removePhone,
   getLocations, getAvailableDrivers, getVehicles,
@@ -377,5 +604,7 @@ module.exports = {
   getActivePromoCodes, applyPromo, getMyPromoCodes,
   rateDriver,
   fileComplaint, getMyComplaints,
+  getSavedLocations, addSavedLocation, updateSavedLocation, deleteSavedLocation,
+  triggerSOS, shareTrip, getEmergencyContacts, addEmergencyContact, deleteEmergencyContact,
   calculateSurgeMultiplier
 };

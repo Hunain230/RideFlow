@@ -44,4 +44,17 @@ router.post  ('/ratings',                   C.rateDriver);
 router.post  ('/complaints',                C.fileComplaint);
 router.get   ('/complaints',                C.getMyComplaints);
 
+// ─── Saved Locations ───────────────────────────────────────────
+router.get   ('/saved-locations',           C.getSavedLocations);
+router.post  ('/saved-locations',           C.addSavedLocation);
+router.patch ('/saved-locations/:id',       C.updateSavedLocation);
+router.delete('/saved-locations/:id',       C.deleteSavedLocation);
+
+// ─── Safety Features ───────────────────────────────────────────
+router.post  ('/sos',                       C.triggerSOS);
+router.post  ('/share-trip',                C.shareTrip);
+router.get   ('/emergency-contacts',        C.getEmergencyContacts);
+router.post  ('/emergency-contacts',        C.addEmergencyContact);
+router.delete('/emergency-contacts/:id',    C.deleteEmergencyContact);
+
 module.exports = router;

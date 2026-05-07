@@ -2,9 +2,12 @@
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
+const http    = require('http');
 const { globalErrorHandler } = require('./utils/helpers');
+const wsServer = require('./utils/websocket');
 
 const app = express();
+const server = http.createServer(app);
 
 // ─── Middleware ───────────────────────────────────────────────
 app.use(cors());
@@ -22,12 +25,14 @@ const adminRoutes = require('./routes/admin');
 const customerRoutes = require('./routes/customer');
 const driverRoutes = require('./routes/driver');
 const riderRoutes = require('./routes/rider');
+const notificationRoutes = require('./routes/notifications');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/rider', riderRoutes);
+app.use('/api/rider/notifications', notificationRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) =>
@@ -39,7 +44,13 @@ app.use(globalErrorHandler);
 
 // ─── Start ────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+
+// Initialize WebSocket server
+wsServer.initialize(server);
+
+server.listen(PORT, () => {
   console.log(`🚀  RideFlow API running on http://localhost:${PORT}`);
+  console.log(`    WebSocket: ws://localhost:${PORT}`);
   console.log(`    ENV: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`    Connected WebSocket clients: ${wsServer.getConnectedClients()}`);
 });

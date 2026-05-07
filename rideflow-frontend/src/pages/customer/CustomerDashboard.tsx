@@ -11,6 +11,8 @@ import { Badge } from '../../components/ui/Badge';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { toast } from '../../components/ui/Toast';
 import { riderAPI } from '../../lib/rider';
+import { useWebSocket } from '../../lib/websocket';
+import { SafetyPanel } from '../../components/safety/SafetyPanel';
 import { fadeSlideUp } from '../../motion/presets';
 
 export function CustomerDashboard() {
@@ -56,6 +58,9 @@ function BookTab() {
   const [activeRideId, setActiveRideId] = useState<number | null>(null);
   const [rideState, setRideState] = useState<any>(null);
   const [estimatedFare, setEstimatedFare] = useState<number>(0);
+  
+  // WebSocket integration for real-time updates
+  const { subscribeToRide } = useWebSocket();
 
   // Ride status progression (without cancelled - only shown when actually cancelled)
   const rideStatuses = [
@@ -104,9 +109,11 @@ function BookTab() {
         setActiveRideId(active.RideID);
         setRideState(active);
         setStep(4);
+        // Subscribe to real-time updates for this ride
+        subscribeToRide(active.RideID);
       }
     });
-  }, []);
+  }, [subscribeToRide]);
 
   useEffect(() => {
     let interval: any;
@@ -135,6 +142,8 @@ function BookTab() {
         vehicleType: selectedVehicle.Type
       });
       setActiveRideId(res.data.data.rideID);
+      // Subscribe to real-time updates for this ride
+      subscribeToRide(res.data.data.rideID);
       toast.success('Ride requested! Finding your driver...');
       setStep(4);
     } catch (err: any) {
@@ -330,12 +339,13 @@ function BookTab() {
       )}
 
       {step === 4 && rideState && (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <div className="flex-1">
           {/* Check if ride is cancelled - show cancelled status separately */}
           {rideState.RideStatus === 'Cancelled' ? (
             <GlassCard tier={3} className="max-w-2xl mx-auto p-8 text-center backdrop-blur-xl bg-glass-white border-glass-border shadow-glow-lg">
               <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center mx-auto mb-6">
-                <cancelledStatus.icon size={32} className="text-red-500" />
+                <span className="text-4xl text-red-500">{cancelledStatus.icon}</span>
               </div>
               <h3 className="text-2xl font-display mb-2 bg-gradient-to-r from-red-600 to-pink-500 bg-clip-text text-transparent font-bold">Ride Cancelled</h3>
               <p className="text-text-muted mb-4">Your ride has been cancelled. You can book a new ride anytime.</p>
@@ -473,6 +483,12 @@ function BookTab() {
               )}
             </>
           )}
+          </div>
+          
+          {/* Safety Panel for active rides */}
+          <div className="lg:w-80">
+            <SafetyPanel rideID={activeRideId} />
+          </div>
         </div>
       )}
 
@@ -528,7 +544,6 @@ function TripsTab() {
     try {
       await riderAPI.rateDriver({
         rideID: selectedRide.RideID,
-        driverUserID: selectedRide.DriverUserID,
         score: rating,
         comment: ratingComment
       });

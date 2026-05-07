@@ -20,4 +20,21 @@ export const riderAPI = {
   rateDriver:          (data: object) => api.post('/rider/ratings', data),
   fileComplaint:       (data: object) => api.post('/rider/complaints', data),
   getComplaints:       () => api.get('/rider/complaints'),
+  getSavedLocations:   () => api.get('/rider/saved-locations'),
+  addSavedLocation:    (data: object) => api.post('/rider/saved-locations', data),
+  updateSavedLocation: (id: number, data: object) => api.patch(`/rider/saved-locations/${id}`, data),
+  deleteSavedLocation: (id: number) => api.delete(`/rider/saved-locations/${id}`),
+  // Safety Features
+  triggerSOS:          (data: object) => api.post('/rider/sos', data),
+  shareTrip:           (data: object) => api.post('/rider/share-trip', data),
+  getEmergencyContacts: () => api.get('/rider/emergency-contacts'),
+  addEmergencyContact: (data: object) => api.post('/rider/emergency-contacts', data),
+  deleteEmergencyContact: (id: number) => api.delete(`/rider/emergency-contacts/${id}`),
+  // Notifications
+  getNotifications:     (unreadOnly?: boolean) => api.get('/rider/notifications', { params: { unreadOnly } }),
+  markNotificationsRead: (ids: number[]) => api.post('/rider/notifications/mark-read', { notificationIds: ids }),
+  markAllNotificationsRead: () => api.post('/rider/notifications/mark-all-read'),
+  deleteNotification:   (id: number) => api.delete(`/rider/notifications/${id}`),
+  getSafetyAlerts:      () => api.get('/rider/notifications/safety-alerts'),
+  resolveSafetyAlert:   (id: number) => api.post(`/rider/notifications/safety-alerts/${id}/resolve`),
 };
