@@ -434,7 +434,7 @@ export function Landing() {
 
               {/* Floating tooltip */}
               <motion.div
-                className="absolute top-[32%] left-[44%] bg-white rounded-2xl p-3 flex items-center gap-3 shadow-lg border border-amber-200/30 pointer-events-none"
+                className="absolute top-[28%] left-[44%] bg-white rounded-2xl p-3 flex items-center gap-3 shadow-lg border border-amber-200/30 pointer-events-none"
                 animate={{
                   y: [0, -7, 0],
                 }}
