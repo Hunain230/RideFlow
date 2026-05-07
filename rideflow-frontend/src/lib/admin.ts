@@ -3,13 +3,20 @@ import { api } from './api';
 export const adminAPI = {
   // Users
   getUsers:           (params?: object) => api.get('/admin/users', { params }),
+  createUser:         (data: object) => api.post('/admin/users', data),
+  updateUser:         (id: number, data: object) => api.put(`/admin/users/${id}`, data),
+  deleteUser:         (id: number) => api.delete(`/admin/users/${id}`),
   updateUserStatus:   (id: number, status: string) => api.patch(`/admin/users/${id}/status`, { status }),
+  updateUserRole:     (id: number, role: string) => api.patch(`/admin/users/${id}/role`, { role }),
   // Drivers
   getDrivers:         () => api.get('/admin/drivers'),
   verifyDriver:       (id: number, status: string) => api.patch(`/admin/drivers/${id}/verify`, { status }),
   approvePayout:      (id: number) => api.post(`/admin/drivers/${id}/payout`),
   // Vehicles
   getVehicles:        () => api.get('/admin/vehicles'),
+  createVehicle:      (data: object) => api.post('/admin/vehicles', data),
+  updateVehicle:      (id: number, data: object) => api.put(`/admin/vehicles/${id}`, data),
+  deleteVehicle:      (id: number) => api.delete(`/admin/vehicles/${id}`),
   verifyVehicle:      (id: number, status: string) => api.patch(`/admin/vehicles/${id}/verify`, { status }),
   // Promos
   getPromoCodes:      () => api.get('/admin/promocodes'),
@@ -19,6 +26,15 @@ export const adminAPI = {
   getComplaints:      (status?: string) => api.get('/admin/complaints', { params: { status } }),
   updateComplaint:    (id: number, status: string) => api.patch(`/admin/complaints/${id}`, { status }),
   // Rides
+  getRides:           (params?: object) => api.get('/admin/rides', { params }),
+  updateRideStatus:  (id: number, status: string) => api.patch(`/admin/rides/${id}/status`, { status }),
+  cancelRide:         (id: number) => api.delete(`/admin/rides/${id}`),
+  // Ratings
+  getRatings:         (params?: object) => api.get('/admin/ratings', { params }),
+  deleteRating:       (rideId: number, ratedBy: number) => api.delete(`/admin/ratings/${rideId}`, { params: { ratedBy } }),
+  // Notifications
+  getNotifications:    () => api.get('/admin/notifications'),
+  // Surge & Fare
   applySurge:         (id: number, multiplier: number) => api.post(`/admin/rides/${id}/surge`, { multiplier }),
   recalcFare:         (id: number) => api.post(`/admin/rides/${id}/fare`),
   // Locations

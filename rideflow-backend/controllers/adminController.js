@@ -24,6 +24,71 @@ const getAllUsers = asyncHandler(async (req, res) => {
   return sendSuccess(res, rows);
 });
 
+// POST /api/admin/users
+const createUser = asyncHandler(async (req, res) => {
+  const { firstName, lastName, email, password, role, phoneNumbers } = req.body;
+  if (!firstName || !lastName || !email || !password || !role) {
+    return sendError(res, 'firstName, lastName, email, password, role are required.');
+  }
+  if (!['Rider', 'Driver', 'Admin'].includes(role)) {
+    return sendError(res, 'Role must be Rider, Driver, or Admin.');
+  }
+  
+  // Check if email exists
+  const [existing] = await db.query('SELECT UserID FROM USERS WHERE Email = ?', [email]);
+  if (existing.length > 0) {
+    return sendError(res, 'Email already exists.');
+  }
+  
+  const bcrypt = require('bcryptjs');
+  const hashedPassword = await bcrypt.hash(password, 12);
+  
+  const [result] = await db.query(
+    'INSERT INTO USERS (FirstName, LastName, Email, Password, Role) VALUES (?, ?, ?, ?, ?)',
+    [firstName, lastName, email, hashedPassword, role]
+  );
+  
+  // Add phone numbers if provided
+  if (phoneNumbers && phoneNumbers.length > 0) {
+    const phoneValues = phoneNumbers.map(phone => [result.insertId, phone]);
+    await db.query('INSERT INTO USER_PHONES (UserID, PhoneNumber) VALUES ?', [phoneValues]);
+  }
+  
+  return sendSuccess(res, { userID: result.insertId }, 'User created', 201);
+});
+
+// PUT /api/admin/users/:id
+const updateUser = asyncHandler(async (req, res) => {
+  const { firstName, lastName, email, role } = req.body;
+  if (!firstName || !lastName || !email || !role) {
+    return sendError(res, 'firstName, lastName, email, role are required.');
+  }
+  if (!['Rider', 'Driver', 'Admin'].includes(role)) {
+    return sendError(res, 'Role must be Rider, Driver, or Admin.');
+  }
+  
+  await db.query(
+    'UPDATE USERS SET FirstName = ?, LastName = ?, Email = ?, Role = ? WHERE UserID = ?',
+    [firstName, lastName, email, role, req.params.id]
+  );
+  
+  return sendSuccess(res, null, 'User updated');
+});
+
+// DELETE /api/admin/users/:id
+const deleteUser = asyncHandler(async (req, res) => {
+  // Check if user has associated data
+  const [rides] = await db.query('SELECT COUNT(*) AS count FROM RIDES WHERE RiderID = ? OR DriverID = ?', [req.params.id, req.params.id]);
+  const [driver] = await db.query('SELECT DriverID FROM DRIVERS WHERE UserID = ?', [req.params.id]);
+  
+  if (rides[0].count > 0) {
+    return sendError(res, 'Cannot delete user with associated rides. Suspend instead.');
+  }
+  
+  await db.query('DELETE FROM USERS WHERE UserID = ?', [req.params.id]);
+  return sendSuccess(res, null, 'User deleted');
+});
+
 // PATCH /api/admin/users/:id/status
 const updateUserStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
@@ -33,6 +98,17 @@ const updateUserStatus = asyncHandler(async (req, res) => {
   await db.query('UPDATE USERS SET AccountStatus = ? WHERE UserID = ?',
     [status, req.params.id]);
   return sendSuccess(res, null, `User status updated to ${status}`);
+});
+
+// PATCH /api/admin/users/:id/role
+const updateUserRole = asyncHandler(async (req, res) => {
+  const { role } = req.body;
+  if (!['Rider', 'Driver', 'Admin'].includes(role)) {
+    return sendError(res, 'Role must be Rider, Driver, or Admin.');
+  }
+  await db.query('UPDATE USERS SET Role = ? WHERE UserID = ?',
+    [role, req.params.id]);
+  return sendSuccess(res, null, `User role updated to ${role}`);
 });
 
 // ─── Drivers ──────────────────────────────────────────────────
@@ -74,6 +150,62 @@ const getAllVehicles = asyncHandler(async (req, res) => {
     JOIN USERS u ON d.UserID = u.UserID
     ORDER BY v.VerificationStatus, v.VehicleID DESC`);
   return sendSuccess(res, rows);
+});
+
+// POST /api/admin/vehicles
+const createVehicle = asyncHandler(async (req, res) => {
+  const { driverId, make, model, year, color, licensePlate, vehicleType } = req.body;
+  if (!driverId || !make || !model || !year || !licensePlate || !vehicleType) {
+    return sendError(res, 'driverId, make, model, year, licensePlate, vehicleType are required.');
+  }
+  if (!['Economy', 'Business', 'Bike'].includes(vehicleType)) {
+    return sendError(res, 'Vehicle type must be Economy, Business, or Bike.');
+  }
+  
+  // Check if license plate exists
+  const [existing] = await db.query('SELECT VehicleID FROM VEHICLES WHERE LicensePlate = ?', [licensePlate]);
+  if (existing.length > 0) {
+    return sendError(res, 'License plate already exists.');
+  }
+  
+  const [result] = await db.query(
+    `INSERT INTO VEHICLES (DriverID, Make, Model, Year, Color, LicensePlate, VehicleType)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [driverId, make, model, year, color || null, licensePlate, vehicleType]
+  );
+  
+  return sendSuccess(res, { vehicleID: result.insertId }, 'Vehicle created', 201);
+});
+
+// PUT /api/admin/vehicles/:id
+const updateVehicle = asyncHandler(async (req, res) => {
+  const { make, model, year, color, licensePlate, vehicleType } = req.body;
+  if (!make || !model || !year || !licensePlate || !vehicleType) {
+    return sendError(res, 'make, model, year, licensePlate, vehicleType are required.');
+  }
+  if (!['Economy', 'Business', 'Bike'].includes(vehicleType)) {
+    return sendError(res, 'Vehicle type must be Economy, Business, or Bike.');
+  }
+  
+  await db.query(
+    `UPDATE VEHICLES SET Make = ?, Model = ?, Year = ?, Color = ?, LicensePlate = ?, VehicleType = ?
+     WHERE VehicleID = ?`,
+    [make, model, year, color || null, licensePlate, vehicleType, req.params.id]
+  );
+  
+  return sendSuccess(res, null, 'Vehicle updated');
+});
+
+// DELETE /api/admin/vehicles/:id
+const deleteVehicle = asyncHandler(async (req, res) => {
+  // Check if vehicle has associated rides
+  const [rides] = await db.query('SELECT COUNT(*) AS count FROM RIDES WHERE VehicleID = ?', [req.params.id]);
+  if (rides[0].count > 0) {
+    return sendError(res, 'Cannot delete vehicle with associated rides. Reject instead.');
+  }
+  
+  await db.query('DELETE FROM VEHICLES WHERE VehicleID = ?', [req.params.id]);
+  return sendSuccess(res, null, 'Vehicle deleted');
 });
 
 // PATCH /api/admin/vehicles/:id/verify
@@ -148,6 +280,120 @@ const updateComplaint = asyncHandler(async (req, res) => {
   await db.query('UPDATE COMPLAINTS SET ComplaintStatus = ? WHERE ComplaintID = ?',
     [status, req.params.id]);
   return sendSuccess(res, null, `Complaint updated to ${status}`);
+});
+
+// ─── Ride Management ─────────────────────────────────────────────
+
+// GET /api/admin/rides
+const getAllRides = asyncHandler(async (req, res) => {
+  const { status, from, to } = req.query;
+  let sql = `
+    SELECT r.*, 
+           CONCAT(ru.FirstName,' ',ru.LastName) AS RiderName,
+           CONCAT(du.FirstName,' ',du.LastName) AS DriverName,
+           pu.City AS PickupCity, du.City AS DropoffCity,
+           v.Make, v.Model, v.LicensePlate
+    FROM RIDES r
+    JOIN USERS ru ON r.RiderID = ru.UserID
+    LEFT JOIN DRIVERS d ON r.DriverID = d.DriverID
+    LEFT JOIN USERS du ON d.UserID = du.UserID
+    LEFT JOIN LOCATIONS pu ON r.PickupLocationID = pu.LocationID
+    LEFT JOIN LOCATIONS du_loc ON r.DropoffLocationID = du_loc.LocationID
+    LEFT JOIN VEHICLES v ON r.VehicleID = v.VehicleID
+    WHERE 1=1`;
+  const params = [];
+  if (status) { sql += ' AND r.RideStatus = ?'; params.push(status); }
+  if (from && to) { sql += ' AND r.StartTime BETWEEN ? AND ?'; params.push(from, to); }
+  sql += ' ORDER BY r.StartTime DESC';
+  const [rows] = await db.query(sql, params);
+  return sendSuccess(res, rows);
+});
+
+// PATCH /api/admin/rides/:id/status
+const updateRideStatus = asyncHandler(async (req, res) => {
+  const { status } = req.body;
+  if (!['Requested','Accepted','InProgress','Completed','Cancelled'].includes(status)) {
+    return sendError(res, 'Invalid ride status.');
+  }
+  await db.query('UPDATE RIDES SET RideStatus = ? WHERE RideID = ?',
+    [status, req.params.id]);
+  return sendSuccess(res, null, `Ride status updated to ${status}`);
+});
+
+// DELETE /api/admin/rides/:id
+const cancelRide = asyncHandler(async (req, res) => {
+  const [ride] = await db.query('SELECT RideStatus FROM RIDES WHERE RideID = ?', [req.params.id]);
+  if (!ride.length) {
+    return sendError(res, 'Ride not found.', 404);
+  }
+  if (ride[0].RideStatus === 'Completed') {
+    return sendError(res, 'Cannot cancel completed ride.');
+  }
+  
+  await db.query('UPDATE RIDES SET RideStatus = "Cancelled" WHERE RideID = ?', [req.params.id]);
+  return sendSuccess(res, null, 'Ride cancelled');
+});
+
+// ─── Ratings & Reviews Moderation ───────────────────────────────────
+
+// GET /api/admin/ratings
+const getAllRatings = asyncHandler(async (req, res) => {
+  const { minScore, maxScore, flagged } = req.query;
+  let sql = `
+    SELECT r.*, 
+           CONCAT(rater.FirstName,' ',rater.LastName) AS RaterName,
+           CONCAT(rated.FirstName,' ',rated.LastName) AS RatedUserName,
+           rater.Role AS RaterRole, rated.Role AS RatedUserRole
+    FROM RATINGS r
+    JOIN USERS rater ON r.RatedBy = rater.UserID
+    JOIN USERS rated ON r.RatedUserID = rated.UserID
+    WHERE 1=1`;
+  const params = [];
+  if (minScore) { sql += ' AND r.Score >= ?'; params.push(minScore); }
+  if (maxScore) { sql += ' AND r.Score <= ?'; params.push(maxScore); }
+  if (flagged === 'true') { sql += ' AND r.Score <= 2'; }
+  sql += ' ORDER BY r.Timestamp DESC';
+  const [rows] = await db.query(sql, params);
+  return sendSuccess(res, rows);
+});
+
+// DELETE /api/admin/ratings/:id
+const deleteRating = asyncHandler(async (req, res) => {
+  await db.query('DELETE FROM RATINGS WHERE RideID = ? AND RatedBy = ?', 
+    [req.params.rideId, req.query.ratedBy]);
+  return sendSuccess(res, null, 'Rating deleted');
+});
+
+// GET /api/admin/notifications
+const getAdminNotifications = asyncHandler(async (req, res) => {
+  const [lowRatedDrivers] = await db.query(`
+    SELECT d.DriverID, CONCAT(u.FirstName,' ',u.LastName) AS DriverName,
+           COUNT(r.Score) AS TotalRatings, ROUND(AVG(r.Score),2) AS AvgRating
+    FROM DRIVERS d JOIN USERS u ON d.UserID=u.UserID
+    JOIN RATINGS r ON r.RatedUserID=u.UserID
+    GROUP BY d.DriverID, u.FirstName, u.LastName
+    HAVING AVG(r.Score) < 3.0 AND COUNT(r.Score) >= 3
+    ORDER BY AvgRating ASC
+  `);
+  
+  const [unverifiedDrivers] = await db.query(`
+    SELECT COUNT(*) AS count FROM DRIVERS WHERE VerificationStatus = 'Unverified'
+  `);
+  
+  const [pendingVehicles] = await db.query(`
+    SELECT COUNT(*) AS count FROM VEHICLES WHERE VerificationStatus = 'Pending'
+  `);
+  
+  const [openComplaints] = await db.query(`
+    SELECT COUNT(*) AS count FROM COMPLAINTS WHERE ComplaintStatus = 'Open'
+  `);
+  
+  return sendSuccess(res, {
+    lowRatedDrivers,
+    unverifiedDrivers: unverifiedDrivers[0].count,
+    pendingVehicles: pendingVehicles[0].count,
+    openComplaints: openComplaints[0].count
+  });
 });
 
 // ─── Surge Pricing ────────────────────────────────────────────
@@ -263,11 +509,13 @@ const addLocation = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  getAllUsers, updateUserStatus,
+  getAllUsers, createUser, updateUser, deleteUser, updateUserStatus, updateUserRole,
   getAllDrivers, verifyDriver,
-  getAllVehicles, verifyVehicle,
+  getAllVehicles, createVehicle, updateVehicle, deleteVehicle, verifyVehicle,
   getAllPromoCodes, createPromoCode, updatePromoStatus,
   getAllComplaints, updateComplaint,
+  getAllRides, updateRideStatus, cancelRide,
+  getAllRatings, deleteRating, getAdminNotifications,
   applySurge, recalcFare, approvePayout,
   revenueByCity, driverEarnings, revenueByPayment,
   leaderboard, topDrivers, activeRides, lowRatedDrivers,
