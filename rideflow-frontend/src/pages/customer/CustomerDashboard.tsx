@@ -240,100 +240,102 @@ function BookTab() {
               action={<LoadingSpinner />}
             />
           ) : (
-            <GlassCard tier={3} className="p-8 backdrop-blur-xl bg-glass-white border-glass-border hover:border-soft-gold/30 transition-all duration-300 shadow-glow-lg">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-display mb-4 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Where to?</h3>
-                <p className="text-text-muted">Choose your pickup and dropoff locations for your journey</p>
-              </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Pickup Location */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-champagne/20 border-2 border-amber-500/50 flex items-center justify-center shadow-glow">
-                    <MapPin className="text-amber-500" size={24} />
+            <>
+              <GlassCard tier={3} className="p-8 backdrop-blur-xl bg-glass-white border-glass-border hover:border-soft-gold/30 transition-all duration-300 shadow-glow-lg">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-display mb-4 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Where to?</h3>
+                  <p className="text-text-muted">Choose your pickup and dropoff locations for your journey</p>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Pickup Location */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-champagne/20 border-2 border-amber-500/50 flex items-center justify-center shadow-glow">
+                        <MapPin className="text-amber-500" size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-white">Pickup Location</h4>
+                        <p className="text-text-muted text-sm">Where should we pick you up?</p>
+                      </div>
+                    </div>
+                    <Dropdown
+                      options={locations.map(l => ({
+                        value: l.LocationID,
+                        label: l.LocationName,
+                        subtitle: `${l.City}${l.Street ? `, ${l.Street}` : ''}`,
+                        icon: <MapPin size={16} />
+                      }))}
+                      value={pickup || ''}
+                      onChange={(value) => setPickup(Number(value))}
+                      placeholder="Select pickup location"
+                      variant="pickup"
+                      searchable={true}
+                      icon={<MapPin size={20} />}
+                    />
                   </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">Pickup Location</h4>
-                    <p className="text-text-muted text-sm">Where should we pick you up?</p>
+
+                  {/* Dropoff Location */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 border-2 border-emerald-500/50 flex items-center justify-center shadow-glow">
+                        <MapPin className="text-emerald-500" size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-white">Dropoff Location</h4>
+                        <p className="text-text-muted text-sm">Where are you heading?</p>
+                      </div>
+                    </div>
+                    <Dropdown
+                      options={locations.map(l => ({
+                        value: l.LocationID,
+                        label: l.LocationName,
+                        subtitle: `${l.City}${l.Street ? `, ${l.Street}` : ''}`,
+                        icon: <MapPin size={16} />
+                      }))}
+                      value={dropoff || ''}
+                      onChange={(value) => setDropoff(Number(value))}
+                      placeholder="Select dropoff location"
+                      variant="dropoff"
+                      searchable={true}
+                      icon={<MapPin size={20} />}
+                    />
                   </div>
                 </div>
-                <Dropdown
-                  options={locations.map(l => ({
-                    value: l.LocationID,
-                    label: l.LocationName,
-                    subtitle: `${l.City}${l.Street ? `, ${l.Street}` : ''}`,
-                    icon: <MapPin size={16} />
-                  }))}
-                  value={pickup || ''}
-                  onChange={(value) => setPickup(Number(value))}
-                  placeholder="Select pickup location"
-                  variant="pickup"
-                  searchable={true}
-                  icon={<MapPin size={20} />}
-                />
-              </div>
 
-              {/* Dropoff Location */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 border-2 border-emerald-500/50 flex items-center justify-center shadow-glow">
-                    <MapPin className="text-emerald-500" size={24} />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">Dropoff Location</h4>
-                    <p className="text-text-muted text-sm">Where are you heading?</p>
-                  </div>
+                <div className="flex justify-center mt-8">
+                  <Button 
+                    className="px-12 py-4 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300 text-lg font-semibold"
+                    onClick={() => setStep(2)}
+                    disabled={!pickup || !dropoff}
+                  >
+                    Continue to Vehicle Selection
+                  </Button>
                 </div>
-                <Dropdown
-                  options={locations.map(l => ({
-                    value: l.LocationID,
-                    label: l.LocationName,
-                    subtitle: `${l.City}${l.Street ? `, ${l.Street}` : ''}`,
-                    icon: <MapPin size={16} />
-                  }))}
-                  value={dropoff || ''}
-                  onChange={(value) => setDropoff(Number(value))}
-                  placeholder="Select dropoff location"
-                  variant="dropoff"
-                  searchable={true}
-                  icon={<MapPin size={20} />}
-                />
-              </div>
-            </div>
+              </GlassCard>
 
-            <div className="flex justify-center mt-8">
-              <Button 
-                className="px-12 py-4 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300 text-lg font-semibold"
-                onClick={() => setStep(2)}
-                disabled={!pickup || !dropoff}
-              >
-                Continue to Vehicle Selection
-              </Button>
-            </div>
-          </GlassCard>
-
-          {/* Popular Locations */}
-          <GlassCard tier={2} className="p-6">
-            <h4 className="text-lg font-display mb-4 text-soft-gold">Popular Locations</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {locations.slice(0, 6).map(location => (
-                <LocationCard
-                  key={location.LocationID}
-                  location={location}
-                  onClick={() => {
-                    if (!pickup) {
-                      setPickup(location.LocationID);
-                    } else if (!dropoff && location.LocationID !== pickup) {
-                      setDropoff(location.LocationID);
-                    }
-                  }}
-                  variant={pickup === location.LocationID ? 'pickup' : dropoff === location.LocationID ? 'dropoff' : 'default'}
-                  isSelected={pickup === location.LocationID || dropoff === location.LocationID}
-                />
-              ))}
-            </div>
-          </GlassCard>
+              {/* Popular Locations */}
+              <GlassCard tier={2} className="p-6">
+                <h4 className="text-lg font-display mb-4 text-soft-gold">Popular Locations</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {locations.slice(0, 6).map(location => (
+                    <LocationCard
+                      key={location.LocationID}
+                      location={location}
+                      onClick={() => {
+                        if (!pickup) {
+                          setPickup(location.LocationID);
+                        } else if (!dropoff && location.LocationID !== pickup) {
+                          setDropoff(location.LocationID);
+                        }
+                      }}
+                      variant={pickup === location.LocationID ? 'pickup' : dropoff === location.LocationID ? 'dropoff' : 'default'}
+                      isSelected={pickup === location.LocationID || dropoff === location.LocationID}
+                    />
+                  ))}
+                </div>
+              </GlassCard>
+            </>
           )}
         </div>
       )}
