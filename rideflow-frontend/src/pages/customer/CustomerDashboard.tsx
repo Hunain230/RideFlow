@@ -16,6 +16,7 @@ import { SafetyPanel } from '../../components/safety/SafetyPanel';
 import { Dropdown } from '../../components/ui/Dropdown';
 import { LocationCard } from '../../components/ui/LocationCard';
 import { LoadingSkeleton, LoadingSpinner, EmptyState, RideLoadingState } from '../../components/ui/LoadingStates';
+import { PremiumVehicleCard, VehicleStatsBox } from '../../components/ui/PremiumVehicleCard';
 import { fadeSlideUp } from '../../motion/presets';
 
 export function CustomerDashboard() {
@@ -61,6 +62,49 @@ function BookTab() {
   const [activeRideId, setActiveRideId] = useState<number | null>(null);
   const [rideState, setRideState] = useState<any>(null);
   const [estimatedFare, setEstimatedFare] = useState<number>(0);
+
+  // Mock data for testing
+  const mockLocations = [
+    { LocationID: 1, LocationName: 'Downtown Plaza', City: 'Karachi', Street: 'Main Boulevard' },
+    { LocationID: 2, LocationName: 'Airport Terminal', City: 'Karachi', Street: 'Jinnah Avenue' },
+    { LocationID: 3, LocationName: 'Beach Resort', City: 'Karachi', Street: 'Sea View Road' },
+    { LocationID: 4, LocationName: 'Shopping Mall', City: 'Karachi', Street: 'Gulshan-e-Iqbal' },
+    { LocationID: 5, LocationName: 'University Campus', City: 'Karachi', Street: 'University Road' },
+    { LocationID: 6, LocationName: 'Tech Park', City: 'Karachi', Street: 'IT Park Avenue' }
+  ];
+
+  const mockVehicles = [
+    {
+      Type: 'Economy',
+      Available: 5,
+      EstimatedFare: 'PKR 200-300',
+      EstimatedTime: '5-10 mins',
+      Vehicles: [
+        { DriverID: 1, DriverName: 'Ahmed Khan', Rating: 4.8 },
+        { DriverID: 2, DriverName: 'Sara Ali', Rating: 4.9 }
+      ]
+    },
+    {
+      Type: 'Business',
+      Available: 2,
+      EstimatedFare: 'PKR 400-600',
+      EstimatedTime: '3-7 mins',
+      Vehicles: [
+        { DriverID: 3, DriverName: 'Michael Chen', Rating: 4.9 },
+        { DriverID: 4, DriverName: 'Emma Wilson', Rating: 5.0 }
+      ]
+    },
+    {
+      Type: 'Bike',
+      Available: 8,
+      EstimatedFare: 'PKR 100-150',
+      EstimatedTime: '2-5 mins',
+      Vehicles: [
+        { DriverID: 5, DriverName: 'Raju Kumar', Rating: 4.7 },
+        { DriverID: 6, DriverName: 'Fatima Begum', Rating: 4.8 }
+      ]
+    }
+  ];
   
   // WebSocket integration for real-time updates
   const { subscribeToRide } = useWebSocket();
@@ -90,11 +134,30 @@ function BookTab() {
   };
 
   useEffect(() => {
-    // Load locations and vehicles
+    // Load locations and vehicles - using mock data temporarily for testing
+    console.log('Loading locations and vehicles with mock data...');
+    
+    // Temporarily use mock data to test UI
+    setTimeout(() => {
+      console.log('Setting mock data...');
+      setLocations(mockLocations);
+      setVehicles(mockVehicles);
+      
+      // Set default pickup and dropoff
+      if (mockLocations.length >= 2) {
+        setPickup(mockLocations[0].LocationID);
+        setDropoff(mockLocations[1].LocationID);
+      }
+      
+      toast.success('Mock data loaded for testing');
+    }, 1000);
+
+    // Try to load real data in background
     Promise.all([
       riderAPI.getLocations(),
       riderAPI.getVehicles()
     ]).then(([locationsRes, vehiclesRes]) => {
+      console.log('Real API data loaded:', locationsRes, vehiclesRes);
       setLocations(locationsRes.data.data);
       setVehicles(vehiclesRes.data.data);
       
@@ -103,7 +166,10 @@ function BookTab() {
         setPickup(locationsRes.data.data[0].LocationID);
         setDropoff(locationsRes.data.data[1].LocationID);
       }
-    }).catch(() => {});
+    }).catch((error) => {
+      console.error('Error loading real data:', error);
+      // Keep using mock data if API fails
+    });
     
     // Check if rider already has an active ride
     riderAPI.getRideHistory().then(res => {
@@ -233,9 +299,15 @@ function BookTab() {
 
       {step === 1 && (
         <div className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center mb-4">
+            <p className="text-text-muted">Debug: Locations loaded: {locations.length}, Step: {step}</p>
+          </div>
           {locations.length === 0 ? (
             <EmptyState 
-              type="no-locations"
+              icon={<div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center">
+                <MapPin className="text-amber-500" size={16} />
+              </div>}
+              title="Loading Locations"
               description="Loading available locations..."
               action={<LoadingSpinner />}
             />
@@ -341,118 +413,100 @@ function BookTab() {
       )}
 
       {step === 2 && (
-        <div className="max-w-6xl mx-auto space-y-8">
-          <GlassCard tier={3} className="p-8 backdrop-blur-xl bg-glass-white border-glass-border">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-display mb-4 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Choose Your Ride</h3>
-              <p className="text-text-muted">Select the perfect vehicle for your journey</p>
-            </div>
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header Section */}
+          <div className="text-center mb-8">
+            <h3 className="text-3xl font-display mb-4 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Choose Your Premium Ride</h3>
+            <p className="text-text-muted text-lg">Experience luxury and comfort with our premium vehicle selection</p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {vehicles.map((vehicle, index) => {
-                const isSelected = selectedVehicle?.Type === vehicle.Type;
-                return (
-                  <motion.div
-                    key={vehicle.Type}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.5 }}
-                    whileHover={{ y: -8, scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <GlassCard 
-                      tier={isSelected ? 'amber' : 2}
-                      className={`p-6 cursor-pointer transition-all duration-300 backdrop-blur-xl relative overflow-hidden ${
-                        isSelected 
-                          ? 'bg-gradient-to-br from-soft-gold/20 to-champagne/20 border-soft-gold/50 shadow-glow-lg scale-105 ring-2 ring-soft-gold/30' 
-                          : 'bg-glass-white border-glass-border hover:border-soft-gold/30 hover:shadow-glow'
-                      }`}
-                      onClick={() => {
-                        setSelectedVehicle(vehicle);
-                        // Calculate estimated fare based on vehicle type
-                        const fareRange = vehicle.EstimatedFare.match(/PKR (\d+)-(\d+)/);
-                        if (fareRange) {
-                          setEstimatedFare((parseInt(fareRange[1]) + parseInt(fareRange[2])) / 2);
-                        }
-                      }}
-                    >
-                      {isSelected && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute top-4 right-4 w-8 h-8 bg-soft-gold rounded-full flex items-center justify-center"
-                        >
-                          <span className="text-xs font-bold text-text-primary">✓</span>
-                        </motion.div>
-                      )}
+          {/* Vehicle Stats Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <VehicleStatsBox 
+              type="economy"
+              stats={{
+                totalRides: 1247,
+                avgRating: 4.6,
+                avgFare: 250,
+                popularity: 65
+              }}
+            />
+            <VehicleStatsBox 
+              type="business"
+              stats={{
+                totalRides: 892,
+                avgRating: 4.8,
+                avgFare: 450,
+                popularity: 25
+              }}
+            />
+            <VehicleStatsBox 
+              type="bike"
+              stats={{
+                totalRides: 634,
+                avgRating: 4.5,
+                avgFare: 120,
+                popularity: 10
+              }}
+            />
+          </div>
 
-                      <div className="text-center">
-                        <motion.div 
-                          className="text-6xl mb-4"
-                          whileHover={{ rotate: [0, -10, 10, 0] }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          {vehicle.Type === 'Bike' ? '🏍️' : vehicle.Type === 'Business' ? '💼' : '🚗'}
-                        </motion.div>
-                        <h4 className="font-bold text-xl mb-3 text-text-primary">{vehicle.Type}</h4>
-                        
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${vehicle.Available > 0 ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
-                            <span className="text-sm text-text-muted">
-                              {vehicle.Available > 0 ? `${vehicle.Available} available` : 'Currently unavailable'}
-                            </span>
-                          </div>
-                          
-                          <div className="bg-glass-bg-light rounded-lg p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-text-muted">Est. Fare</span>
-                              <span className="text-sm font-bold text-amber-500">{vehicle.EstimatedFare}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-text-muted">Est. Time</span>
-                              <span className="text-xs text-white">{vehicle.EstimatedTime}</span>
-                            </div>
-                          </div>
+          {/* Premium Vehicle Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {vehicles.map((vehicle, index) => {
+              const isSelected = selectedVehicle?.Type === vehicle.Type;
+              return (
+                <motion.div
+                  key={vehicle.Type}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.2, duration: 0.6, type: 'spring' }}
+                >
+                  <PremiumVehicleCard
+                    vehicle={vehicle}
+                    isSelected={isSelected}
+                    onSelect={() => {
+                      setSelectedVehicle(vehicle);
+                      // Calculate estimated fare based on vehicle type
+                      const fareRange = vehicle.EstimatedFare.match(/PKR (\d+)-(\d+)/);
+                      if (fareRange) {
+                        setEstimatedFare((parseInt(fareRange[1]) + parseInt(fareRange[2])) / 2);
+                      }
+                    }}
+                  />
+                </motion.div>
+              );
+            })}
+          </div>
 
-                          {vehicle.Vehicles.length > 0 && (
-                            <div className="text-xs text-text-muted">
-                              <div className="font-medium text-amber-600 mb-2">Top Drivers</div>
-                              <div className="space-y-1">
-                                {vehicle.Vehicles.slice(0, 2).map((v: any, idx: number) => (
-                                  <div key={idx} className="flex items-center justify-center gap-2">
-                                    <div className="w-4 h-4 bg-amber-500/20 rounded-full" />
-                                    <span>{v.DriverName}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </GlassCard>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            <div className="flex gap-4 justify-center mt-8">
+          {/* Action Buttons */}
+          <div className="flex gap-6 justify-center mt-12">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <Button 
                 variant="glass" 
-                className="px-8 py-3"
+                className="px-12 py-4 text-lg font-semibold border-2 border-glass-border hover:border-soft-gold/50"
                 onClick={() => setStep(1)}
               >
                 ← Back to Locations
               </Button>
+            </motion.div>
+            
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <Button 
-                className="px-12 py-3 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-16 py-4 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300 text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed border-2 border-transparent"
                 onClick={() => setStep(3)} 
                 disabled={!selectedVehicle}
               >
-                Continue to Summary →
+                {selectedVehicle ? `Continue with ${selectedVehicle.Type} →` : 'Select a Vehicle First'}
               </Button>
-            </div>
-          </GlassCard>
+            </motion.div>
+          </div>
         </div>
       )}
 
