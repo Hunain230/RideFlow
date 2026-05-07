@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, DollarSign, User, MapPin, Settings } from 'lucide-react';
+import { Radio, DollarSign, User, MapPin, Settings, BarChart3 } from 'lucide-react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -29,7 +29,6 @@ export function DriverDashboard() {
   const {
     isConnected,
     connectionStatus,
-    lastEvent,
     goOnline: wsGoOnline,
     goOffline: wsGoOffline,
     acceptRide: wsAcceptRide,
@@ -54,7 +53,6 @@ export function DriverDashboard() {
   // Geolocation tracking
   const {
     location: currentLocation,
-    error: locationError,
     getCurrentPosition
   } = useGeolocation({
     enableHighAccuracy: true,
@@ -64,6 +62,7 @@ export function DriverDashboard() {
   const navItems = [
     { id: 'live', label: 'Live', icon: <Radio size={20} /> },
     { id: 'earnings', label: 'Earnings', icon: <DollarSign size={20} /> },
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} /> },
     { id: 'profile', label: 'Profile', icon: <User size={20} /> },
   ];
 
@@ -158,6 +157,7 @@ export function DriverDashboard() {
               />
             )}
             {activeTab === 'earnings' && <EarningsTab />}
+            {activeTab === 'analytics' && <AnalyticsTab />}
             {activeTab === 'profile' && (
               <ProfileTab 
                 profile={profile}
@@ -414,6 +414,277 @@ function LiveTab({
   );
 }
 
+function AnalyticsTab() {
+  const [loading, setLoading] = useState(true);
+  const [overview, setOverview] = useState<any>({});
+  const [performanceMetrics, setPerformanceMetrics] = useState<any>({});
+  const [dailyEarnings, setDailyEarnings] = useState<any[]>([]);
+  const [weeklyEarnings, setWeeklyEarnings] = useState<any[]>([]);
+  const [forecast, setForecast] = useState<any>({});
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all analytics data
+        const [overviewRes, metricsRes, dailyRes, weeklyRes, forecastRes] = await Promise.all([
+          driverAPI.analytics.getEarningsOverview(),
+          driverAPI.analytics.getPerformanceMetrics(),
+          driverAPI.analytics.getDailyEarnings(30),
+          driverAPI.analytics.getWeeklyEarnings(12),
+          driverAPI.analytics.getEarningsForecast(7)
+        ]);
+
+        setOverview(overviewRes.data.data);
+        setPerformanceMetrics(metricsRes.data.data);
+        setDailyEarnings(dailyRes.data.data);
+        setWeeklyEarnings(weeklyRes.data.data);
+        setForecast(forecastRes.data.data);
+      } catch (error: any) {
+        toast.error('Failed to load analytics data');
+        console.error('Analytics error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${Math.round(minutes)} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}m`;
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-glass-bg-light rounded w-48 mb-4" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-32 bg-glass-bg-light rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-display text-white mb-2">Analytics & Insights</h2>
+        <p className="text-text-muted">Comprehensive earnings and performance analytics</p>
+      </div>
+
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <GlassCard tier={1} className="p-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-text-muted">Total Earnings</span>
+            <DollarSign size={20} className="text-green-500" />
+          </div>
+          <div className="text-2xl font-bold text-white">
+            {formatCurrency(overview.NetEarnings || 0)}
+          </div>
+          <div className="text-xs text-text-muted mt-1">After commission</div>
+        </GlassCard>
+
+        <GlassCard tier={1} className="p-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-text-muted">Total Rides</span>
+            <BarChart3 size={20} className="text-blue-500" />
+          </div>
+          <div className="text-2xl font-bold text-white">
+            {overview.TotalRides || 0}
+          </div>
+          <div className="text-xs text-text-muted mt-1">All time</div>
+        </GlassCard>
+
+        <GlassCard tier={1} className="p-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-text-muted">Completion Rate</span>
+            <BarChart3 size={20} className="text-amber-500" />
+          </div>
+          <div className="text-2xl font-bold text-white">
+            {performanceMetrics.CompletionRate?.toFixed(1) || 0}%
+          </div>
+          <div className="text-xs text-text-muted mt-1">Success rate</div>
+        </GlassCard>
+
+        <GlassCard tier={1} className="p-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-text-muted">Avg Rating</span>
+            <BarChart3 size={20} className="text-purple-500" />
+          </div>
+          <div className="text-2xl font-bold text-white">
+            {performanceMetrics.AverageRating?.toFixed(1) || 'N/A'}
+          </div>
+          <div className="text-xs text-text-muted mt-1">From customers</div>
+        </GlassCard>
+      </div>
+
+      {/* Earnings Chart */}
+      <GlassCard tier={1} className="p-6">
+        <h3 className="text-lg font-medium text-white mb-4">Daily Earnings (Last 30 Days)</h3>
+        
+        {/* Simple Bar Chart */}
+        <div className="h-64 flex items-end justify-between gap-1">
+          {dailyEarnings.slice(-14).map((day, index) => {
+            const maxValue = Math.max(...dailyEarnings.slice(-14).map(d => d.NetEarnings || 0));
+            const heightPercent = maxValue > 0 ? ((day.NetEarnings || 0) / maxValue) * 100 : 0;
+            
+            return (
+              <div key={index} className="flex-1 flex flex-col items-center">
+                <div className="w-full bg-green-500 rounded-t-sm transition-all duration-500" 
+                     style={{ height: `${heightPercent}%` }} />
+                <div className="text-xs text-text-muted mt-1 text-center">
+                  {new Date(day.Date).getDate()}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="flex justify-between mt-4 text-sm text-text-muted">
+          <span>Average: {formatCurrency(dailyEarnings.reduce((sum, day) => sum + (day.NetEarnings || 0), 0) / dailyEarnings.length || 0)}</span>
+          <span>Peak: {formatCurrency(Math.max(...dailyEarnings.map(d => d.NetEarnings || 0)))}</span>
+        </div>
+      </GlassCard>
+
+      {/* Performance Metrics */}
+      <GlassCard tier={1} className="p-6">
+        <h3 className="text-lg font-medium text-white mb-4">Performance Metrics</h3>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <div className="text-sm text-text-muted">Avg per Ride</div>
+            <div className="text-lg font-medium text-white">
+              {formatCurrency(performanceMetrics.AverageEarningsPerRide || 0)}
+            </div>
+          </div>
+          
+          <div>
+            <div className="text-sm text-text-muted">Avg Distance</div>
+            <div className="text-lg font-medium text-white">
+              {performanceMetrics.AverageDistancePerRide?.toFixed(1) || 0} km
+            </div>
+          </div>
+          
+          <div>
+            <div className="text-sm text-text-muted">Avg Duration</div>
+            <div className="text-lg font-medium text-white">
+              {formatDuration(performanceMetrics.AverageRideDuration || 0)}
+            </div>
+          </div>
+          
+          <div>
+            <div className="text-sm text-text-muted">Total Distance</div>
+            <div className="text-lg font-medium text-white">
+              {performanceMetrics.TotalDistance?.toFixed(0) || 0} km
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Forecast */}
+      {forecast.Forecast && (
+        <GlassCard tier={1} className="p-6">
+          <h3 className="text-lg font-medium text-white mb-4">Earnings Forecast (Next 7 Days)</h3>
+          
+          <div className="space-y-3">
+            {forecast.Forecast.map((day: any, index: number) => (
+              <div key={index} className="flex justify-between items-center p-3 bg-glass-bg-light rounded-lg">
+                <div>
+                  <div className="text-white font-medium">
+                    {new Date(day.Date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </div>
+                  <div className="text-sm text-text-muted">
+                    {day.PredictedRides} rides • {day.Confidence}% confidence
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-medium text-white">
+                    {formatCurrency(day.PredictedEarnings)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-glass-border">
+            <div className="flex justify-between text-sm">
+              <span className="text-text-muted">7-Day Forecast Total</span>
+              <span className="text-white font-medium">
+                {formatCurrency(forecast.Forecast.reduce((sum: number, day: any) => sum + day.PredictedEarnings, 0))}
+              </span>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Export Options */}
+      <GlassCard tier={1} className="p-6">
+        <h3 className="text-lg font-medium text-white mb-4">Export Analytics Data</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Button
+            variant="glass"
+            onClick={() => handleExport('earnings', 'csv')}
+            className="w-full"
+          >
+            Export Earnings (CSV)
+          </Button>
+          
+          <Button
+            variant="glass"
+            onClick={() => handleExport('performance', 'csv')}
+            className="w-full"
+          >
+            Export Performance (CSV)
+          </Button>
+          
+          <Button
+            variant="glass"
+            onClick={() => handleExport('forecast', 'json')}
+            className="w-full"
+          >
+            Export Forecast (JSON)
+          </Button>
+        </div>
+        
+        <div className="mt-4 text-sm text-text-muted">
+          Download your analytics data for external analysis or record keeping.
+        </div>
+      </GlassCard>
+    </div>
+  );
+
+  const handleExport = async (type: 'earnings' | 'performance' | 'forecast', format: 'csv' | 'json' = 'csv') => {
+    try {
+      await driverAPI.analytics.exportAnalytics(type, format);
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} data exported successfully`);
+    } catch (error: any) {
+      toast.error('Failed to export data');
+      console.error('Export error:', error);
+    }
+  };
+}
+
 function EarningsTab() {
   const [wallet, setWallet] = useState<any>({});
   const [earnings, setEarnings] = useState<any>({});
@@ -437,7 +708,7 @@ function EarningsTab() {
 
   const requestPayout = async () => {
     try {
-      await driverAPI.requestPayout();
+      await driverAPI.requestPayout(wallet.WalletBalance || 0);
       toast.success('Payout requested successfully!');
       fetchData();
     } catch (err: any) {

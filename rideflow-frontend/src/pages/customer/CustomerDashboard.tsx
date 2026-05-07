@@ -848,7 +848,7 @@ function BookTab() {
           
           {/* Safety Panel for active rides */}
           <div className="lg:w-80">
-            <SafetyPanel rideID={activeRideId} />
+            {activeRideId && <SafetyPanel rideID={activeRideId} />}
           </div>
         </div>
       )}

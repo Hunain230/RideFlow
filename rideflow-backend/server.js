@@ -29,6 +29,7 @@ const customerRoutes = require('./routes/customer');
 const driverRoutes = require('./routes/driver');
 const riderRoutes = require('./routes/rider');
 const notificationRoutes = require('./routes/notifications');
+const rideTrackingRoutes = require('./routes/rideTracking');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -36,6 +37,7 @@ app.use('/api/customer', customerRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/rider', riderRoutes);
 app.use('/api/rider/notifications', notificationRoutes);
+app.use('/api/rides', rideTrackingRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) =>

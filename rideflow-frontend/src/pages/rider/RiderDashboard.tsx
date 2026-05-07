@@ -335,7 +335,9 @@ function BookTab() {
           {rideState.RideStatus === 'Cancelled' ? (
             <GlassCard tier={3} className="max-w-2xl mx-auto p-8 text-center backdrop-blur-xl bg-glass-white border-glass-border shadow-glow-lg">
               <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center mx-auto mb-6">
-                <cancelledStatus.icon size={32} className="text-red-500" />
+                <div className="text-red-500 w-8 h-8 flex items-center justify-center">
+                <cancelledStatus.icon />
+              </div>
               </div>
               <h3 className="text-2xl font-display mb-2 bg-gradient-to-r from-red-600 to-pink-500 bg-clip-text text-transparent font-bold">Ride Cancelled</h3>
               <p className="text-text-muted mb-4">Your ride has been cancelled. You can book a new ride anytime.</p>

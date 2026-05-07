@@ -242,7 +242,7 @@ class SocketService {
   }
 
   goOffline() {
-    this.emit('driver_offline');
+    this.emit('driver_offline', {});
   }
 
   updateLocation(latitude: number, longitude: number, locationID?: number) {

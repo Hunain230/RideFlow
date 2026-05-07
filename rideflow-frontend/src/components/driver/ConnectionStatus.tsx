@@ -78,7 +78,7 @@ export function ConnectionStatus({
       {connectionStatus === 'disconnected' && onReconnect && (
         <Button
           variant="glass"
-          size="xs"
+          size="sm"
           onClick={onReconnect}
           className="h-6 px-2 text-xs"
         >

@@ -2,9 +2,13 @@
 const router = require('express').Router();
 const { authenticate, requireDriver } = require('../middleware/auth');
 const C = require('../controllers/driverController');
+const analyticsRoutes = require('./analytics');
 
 // All driver routes require JWT + Driver role
 router.use(authenticate, requireDriver);
+
+// ─── Analytics Routes ───────────────────────────────────────
+router.use('/analytics', analyticsRoutes);
 
 // ─── Profile & Availability ───────────────────────────────────
 router.get   ('/profile',                   C.getProfile);

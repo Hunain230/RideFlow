@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, Car, Tag, MessageSquare, BarChart2, Shield, TrendingUp, Activity, DollarSign, Star, AlertCircle, CheckCircle, Clock, Zap } from 'lucide-react';
+import { LayoutDashboard, Users, Car, Tag, MessageSquare, BarChart2, Activity, DollarSign, Star, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { GlassCard } from '../../components/ui/GlassCard';
-import { StatCard } from '../../components/ui/StatCard';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { adminAPI } from '../../lib/admin';
@@ -459,8 +458,6 @@ function UsersTab() {
                   <td className="p-6">
                     <div className="flex gap-2 justify-end">
                       <MagneticButton
-                        variant="glass"
-                        size="sm"
                         onClick={() => toggleStatus(u)}
                         className="px-4 py-2 text-sm font-medium backdrop-blur-xl bg-glass-white border border-glass-border hover:border-soft-gold/50 text-text-primary rounded-xl transition-all duration-300"
                       >
@@ -582,8 +579,6 @@ function DriversTab() {
                     <div className="flex gap-2 justify-end">
                       {d.VerificationStatus !== 'Verified' && (
                         <MagneticButton
-                          variant="gradient"
-                          size="sm"
                           onClick={() => verify(d.DriverID)}
                           className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-admin-success to-admin-cyan hover:from-admin-cyan hover:to-admin-success text-white shadow-glow rounded-xl border-0 transition-all duration-300"
                         >

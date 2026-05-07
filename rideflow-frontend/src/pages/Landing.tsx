@@ -5,14 +5,11 @@ import { Navbar } from '../components/layout/Navbar';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { MagneticButton } from '../components/ui/MagneticButton';
-import { Floating3DObjects } from '../components/ui/Floating3DObjects';
 import { ParallaxWrapper } from '../components/ui/ParallaxWrapper';
 import { MotionTrails } from '../components/ui/MotionTrails';
 import { GeographicTextures } from '../components/ui/GeographicTextures';
 import { CinematicBackground } from '../components/ui/CinematicBackground';
 import { DynamicSpotlight } from '../components/ui/DynamicSpotlight';
-import { AnimatedParticles } from '../components/ui/AnimatedParticles';
-import { ConnectiveGlow } from '../components/ui/ConnectiveGlow';
 import { AuthModal } from '../components/auth/AuthModal';
 import { motion } from 'framer-motion';
 

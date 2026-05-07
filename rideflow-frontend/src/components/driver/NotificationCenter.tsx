@@ -190,7 +190,7 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
                                 {formatTime(notification.CreatedAt)}
                               </span>
                               {!notification.IsRead && (
-                                <Button variant="glass" size="xs" onClick={(e) => {
+                                <Button variant="glass" size="sm" onClick={(e) => {
                                   e.stopPropagation();
                                   markAsRead(notification.NotificationID);
                                 }}>
@@ -273,7 +273,7 @@ export function NotificationCard({ notification, onRead }: NotificationCardProps
             {!notification.IsRead && onRead && (
               <Button 
                 variant="glass" 
-                size="xs" 
+                size="sm" 
                 onClick={() => onRead(notification.NotificationID)}
               >
                 Mark as read
