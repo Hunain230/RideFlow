@@ -13,6 +13,9 @@ import { toast } from '../../components/ui/Toast';
 import { riderAPI } from '../../lib/rider';
 import { useWebSocket } from '../../lib/websocket';
 import { SafetyPanel } from '../../components/safety/SafetyPanel';
+import { Dropdown } from '../../components/ui/Dropdown';
+import { LocationCard } from '../../components/ui/LocationCard';
+import { LoadingSkeleton, LoadingSpinner, EmptyState, RideLoadingState } from '../../components/ui/LoadingStates';
 import { fadeSlideUp } from '../../motion/presets';
 
 export function CustomerDashboard() {
@@ -229,112 +232,376 @@ function BookTab() {
       )}
 
       {step === 1 && (
-        <GlassCard tier={3} className="p-6 max-w-xl backdrop-blur-xl bg-glass-white border-glass-border hover:border-soft-gold/30 transition-all duration-300 shadow-glow-lg">
-          <h3 className="text-xl font-display mb-6 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Where to?</h3>
-          <div className="flex flex-col gap-4 relative">
-            <div className="absolute left-[19px] top-10 bottom-10 w-px border-l-2 border-dashed border-amber-500/30" />
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 to-champagne/20 border-2 border-amber-500/50 flex items-center justify-center shadow-glow">
-                <MapPin className="text-amber-500 z-10 shrink-0" size={20} />
+        <div className="max-w-4xl mx-auto space-y-8">
+          {locations.length === 0 ? (
+            <EmptyState 
+              type="no-locations"
+              description="Loading available locations..."
+              action={<LoadingSpinner />}
+            />
+          ) : (
+            <GlassCard tier={3} className="p-8 backdrop-blur-xl bg-glass-white border-glass-border hover:border-soft-gold/30 transition-all duration-300 shadow-glow-lg">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-display mb-4 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Where to?</h3>
+                <p className="text-text-muted">Choose your pickup and dropoff locations for your journey</p>
               </div>
-              <select className="w-full bg-glass-bg-light border border-glass-border rounded-radius-md px-4 py-3 text-white outline-none hover:border-soft-gold/30 transition-colors" value={pickup || ''} onChange={(e) => setPickup(Number(e.target.value))}>
-                {locations.map(l => <option key={l.LocationID} value={l.LocationID} className="bg-gray-800 text-white hover:bg-gray-700">{l.City} - {l.LocationName}</option>)}
-              </select>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-success/20 to-emerald-500/20 border-2 border-success/50 flex items-center justify-center shadow-glow">
-                <MapPin className="text-success z-10 shrink-0" size={20} />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Pickup Location */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-champagne/20 border-2 border-amber-500/50 flex items-center justify-center shadow-glow">
+                    <MapPin className="text-amber-500" size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-white">Pickup Location</h4>
+                    <p className="text-text-muted text-sm">Where should we pick you up?</p>
+                  </div>
+                </div>
+                <Dropdown
+                  options={locations.map(l => ({
+                    value: l.LocationID,
+                    label: l.LocationName,
+                    subtitle: `${l.City}${l.Street ? `, ${l.Street}` : ''}`,
+                    icon: <MapPin size={16} />
+                  }))}
+                  value={pickup || ''}
+                  onChange={(value) => setPickup(Number(value))}
+                  placeholder="Select pickup location"
+                  variant="pickup"
+                  searchable={true}
+                  icon={<MapPin size={20} />}
+                />
               </div>
-              <select className="w-full bg-glass-bg-light border border-glass-border rounded-radius-md px-4 py-3 text-white outline-none hover:border-soft-gold/30 transition-colors" value={dropoff || ''} onChange={(e) => setDropoff(Number(e.target.value))}>
-                {locations.map(l => <option key={l.LocationID} value={l.LocationID} className="bg-gray-800 text-white hover:bg-gray-700">{l.City} - {l.LocationName}</option>)}
-              </select>
+
+              {/* Dropoff Location */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 border-2 border-emerald-500/50 flex items-center justify-center shadow-glow">
+                    <MapPin className="text-emerald-500" size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-white">Dropoff Location</h4>
+                    <p className="text-text-muted text-sm">Where are you heading?</p>
+                  </div>
+                </div>
+                <Dropdown
+                  options={locations.map(l => ({
+                    value: l.LocationID,
+                    label: l.LocationName,
+                    subtitle: `${l.City}${l.Street ? `, ${l.Street}` : ''}`,
+                    icon: <MapPin size={16} />
+                  }))}
+                  value={dropoff || ''}
+                  onChange={(value) => setDropoff(Number(value))}
+                  placeholder="Select dropoff location"
+                  variant="dropoff"
+                  searchable={true}
+                  icon={<MapPin size={20} />}
+                />
+              </div>
             </div>
-            <Button className="mt-6 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300" onClick={() => setStep(2)}>Continue</Button>
-          </div>
-        </GlassCard>
+
+            <div className="flex justify-center mt-8">
+              <Button 
+                className="px-12 py-4 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300 text-lg font-semibold"
+                onClick={() => setStep(2)}
+                disabled={!pickup || !dropoff}
+              >
+                Continue to Vehicle Selection
+              </Button>
+            </div>
+          </GlassCard>
+
+          {/* Popular Locations */}
+          <GlassCard tier={2} className="p-6">
+            <h4 className="text-lg font-display mb-4 text-soft-gold">Popular Locations</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {locations.slice(0, 6).map(location => (
+                <LocationCard
+                  key={location.LocationID}
+                  location={location}
+                  onClick={() => {
+                    if (!pickup) {
+                      setPickup(location.LocationID);
+                    } else if (!dropoff && location.LocationID !== pickup) {
+                      setDropoff(location.LocationID);
+                    }
+                  }}
+                  variant={pickup === location.LocationID ? 'pickup' : dropoff === location.LocationID ? 'dropoff' : 'default'}
+                  isSelected={pickup === location.LocationID || dropoff === location.LocationID}
+                />
+              ))}
+            </div>
+          </GlassCard>
+          )}
+        </div>
       )}
 
       {step === 2 && (
-        <div className="flex flex-col gap-8">
-          <h3 className="text-xl font-display bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Select Vehicle Type</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {vehicles.map(vehicle => {
-              const isSelected = selectedVehicle?.Type === vehicle.Type;
-              return (
-                <motion.div
-                  key={vehicle.Type} 
-                  whileHover={{ y: -8, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <GlassCard 
-                    tier={isSelected ? 'amber' : 2}
-                    className={`p-6 cursor-pointer transition-all duration-300 backdrop-blur-xl ${
-                      isSelected 
-                        ? 'bg-gradient-to-br from-soft-gold/20 to-champagne/20 border-soft-gold/50 shadow-glow-lg scale-105' 
-                        : 'bg-glass-white border-glass-border hover:border-soft-gold/30 hover:shadow-glow'
-                    }`}
-                    onClick={() => {
-                      setSelectedVehicle(vehicle);
-                      // Calculate estimated fare based on vehicle type
-                      const fareRange = vehicle.EstimatedFare.match(/PKR (\d+)-(\d+)/);
-                      if (fareRange) {
-                        setEstimatedFare((parseInt(fareRange[1]) + parseInt(fareRange[2])) / 2);
-                      }
-                    }}
+        <div className="max-w-6xl mx-auto space-y-8">
+          <GlassCard tier={3} className="p-8 backdrop-blur-xl bg-glass-white border-glass-border">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-display mb-4 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Choose Your Ride</h3>
+              <p className="text-text-muted">Select the perfect vehicle for your journey</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {vehicles.map((vehicle, index) => {
+                const isSelected = selectedVehicle?.Type === vehicle.Type;
+                return (
+                  <motion.div
+                    key={vehicle.Type}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.5 }}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <div className="text-5xl mb-4 text-center">{vehicle.Type === 'Bike' ? '🏍️' : vehicle.Type === 'Business' ? '💼' : '🚗'}</div>
-                    <h4 className="font-semibold text-lg mb-2 text-center text-text-primary">{vehicle.Type}</h4>
-                    <div className="text-sm text-text-muted mb-2 text-center">{vehicle.Available} available</div>
-                    <div className="text-xs text-amber-600 font-medium text-center mb-1">{vehicle.EstimatedFare}</div>
-                    <div className="text-xs text-text-muted text-center mb-3">{vehicle.EstimatedTime}</div>
-                    {vehicle.Vehicles.length > 0 && (
-                      <div className="text-xs text-text-muted text-center">
-                        <div className="font-medium text-amber-600 mb-1">Top Drivers</div>
-                        {vehicle.Vehicles.slice(0, 2).map((v: any) => v.DriverName).join(', ')}
+                    <GlassCard 
+                      tier={isSelected ? 'amber' : 2}
+                      className={`p-6 cursor-pointer transition-all duration-300 backdrop-blur-xl relative overflow-hidden ${
+                        isSelected 
+                          ? 'bg-gradient-to-br from-soft-gold/20 to-champagne/20 border-soft-gold/50 shadow-glow-lg scale-105 ring-2 ring-soft-gold/30' 
+                          : 'bg-glass-white border-glass-border hover:border-soft-gold/30 hover:shadow-glow'
+                      }`}
+                      onClick={() => {
+                        setSelectedVehicle(vehicle);
+                        // Calculate estimated fare based on vehicle type
+                        const fareRange = vehicle.EstimatedFare.match(/PKR (\d+)-(\d+)/);
+                        if (fareRange) {
+                          setEstimatedFare((parseInt(fareRange[1]) + parseInt(fareRange[2])) / 2);
+                        }
+                      }}
+                    >
+                      {isSelected && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-4 right-4 w-8 h-8 bg-soft-gold rounded-full flex items-center justify-center"
+                        >
+                          <span className="text-xs font-bold text-text-primary">✓</span>
+                        </motion.div>
+                      )}
+
+                      <div className="text-center">
+                        <motion.div 
+                          className="text-6xl mb-4"
+                          whileHover={{ rotate: [0, -10, 10, 0] }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          {vehicle.Type === 'Bike' ? '🏍️' : vehicle.Type === 'Business' ? '💼' : '🚗'}
+                        </motion.div>
+                        <h4 className="font-bold text-xl mb-3 text-text-primary">{vehicle.Type}</h4>
+                        
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${vehicle.Available > 0 ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
+                            <span className="text-sm text-text-muted">
+                              {vehicle.Available > 0 ? `${vehicle.Available} available` : 'Currently unavailable'}
+                            </span>
+                          </div>
+                          
+                          <div className="bg-glass-bg-light rounded-lg p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-text-muted">Est. Fare</span>
+                              <span className="text-sm font-bold text-amber-500">{vehicle.EstimatedFare}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-text-muted">Est. Time</span>
+                              <span className="text-xs text-white">{vehicle.EstimatedTime}</span>
+                            </div>
+                          </div>
+
+                          {vehicle.Vehicles.length > 0 && (
+                            <div className="text-xs text-text-muted">
+                              <div className="font-medium text-amber-600 mb-2">Top Drivers</div>
+                              <div className="space-y-1">
+                                {vehicle.Vehicles.slice(0, 2).map((v: any, idx: number) => (
+                                  <div key={idx} className="flex items-center justify-center gap-2">
+                                    <div className="w-4 h-4 bg-amber-500/20 rounded-full" />
+                                    <span>{v.DriverName}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </GlassCard>
-                </motion.div>
-              )
-            })}
-          </div>
-          <div className="flex gap-4 justify-center">
-            <Button variant="glass" onClick={() => setStep(1)}>Back</Button>
-            <Button 
-              className="bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300" 
-              onClick={() => setStep(3)} 
-              disabled={!selectedVehicle}
-            >
-              Confirm Selection
-            </Button>
-          </div>
+                    </GlassCard>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-4 justify-center mt-8">
+              <Button 
+                variant="glass" 
+                className="px-8 py-3"
+                onClick={() => setStep(1)}
+              >
+                ← Back to Locations
+              </Button>
+              <Button 
+                className="px-12 py-3 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setStep(3)} 
+                disabled={!selectedVehicle}
+              >
+                Continue to Summary →
+              </Button>
+            </div>
+          </GlassCard>
         </div>
       )}
 
       {step === 3 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <GlassCard tier={1} className="h-[400px] flex items-center justify-center bg-[#111] overflow-hidden" style={{ transform: 'perspective(800px) rotateX(4deg)' }}>
-              <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #333 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-              <div className="relative z-10 flex flex-col items-center gap-2">
-                <MapPin className="text-amber-500" size={40} />
-                <span className="bg-glass-bg backdrop-blur-md px-3 py-1 rounded-full text-sm border border-glass-border">Route Ready</span>
-                <span className="text-text-muted text-sm mt-2">Estimated Fare: PKR {estimatedFare}</span>
+        <div className="max-w-6xl mx-auto space-y-8">
+          <GlassCard tier={3} className="p-8 backdrop-blur-xl bg-glass-white border-glass-border">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-display mb-4 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Ride Summary</h3>
+              <p className="text-text-muted">Review your ride details before booking</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Route Visualization */}
+              <div className="lg:col-span-2">
+                <GlassCard tier={2} className="h-[400px] flex items-center justify-center bg-gradient-to-br from-amber-500/5 to-champagne/5 overflow-hidden relative">
+                  <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #333 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+                  
+                  {/* Animated Route Line */}
+                  <motion.div 
+                    className="absolute top-1/2 left-1/4 right-1/4 h-1 bg-gradient-to-r from-amber-500 to-champagne rounded-full"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: 1, delay: 0.5 }}
+                  />
+                  
+                  <div className="relative z-10 flex flex-col items-center gap-8">
+                    {/* Pickup Point */}
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                      className="flex flex-col items-center gap-2"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/20 to-champagne/20 border-2 border-amber-500/50 flex items-center justify-center shadow-glow">
+                        <MapPin className="text-amber-500" size={24} />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold text-white">Pickup</div>
+                        <div className="text-sm text-text-muted">{locations.find(l => l.LocationID === pickup)?.LocationName}</div>
+                      </div>
+                    </motion.div>
+
+                    {/* Vehicle Icon */}
+                    <motion.div
+                      initial={{ y: -20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 0.7 }}
+                      className="text-4xl"
+                    >
+                      {selectedVehicle?.Type === 'Bike' ? '🏍️' : selectedVehicle?.Type === 'Business' ? '💼' : '🚗'}
+                    </motion.div>
+
+                    {/* Dropoff Point */}
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 0.9 }}
+                      className="flex flex-col items-center gap-2"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 border-2 border-emerald-500/50 flex items-center justify-center shadow-glow">
+                        <MapPin className="text-emerald-500" size={24} />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold text-white">Dropoff</div>
+                        <div className="text-sm text-text-muted">{locations.find(l => l.LocationID === dropoff)?.LocationName}</div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </GlassCard>
               </div>
-            </GlassCard>
-          </div>
-          <div className="flex flex-col gap-4">
-            <GlassCard tier={2} className="p-6">
-              <h3 className="text-xl font-display mb-4">Confirm Ride</h3>
-              <div className="flex justify-between mb-2 text-sm"><span className="text-text-muted">Vehicle</span><span>{selectedVehicle?.Type}</span></div>
-              <div className="flex justify-between mb-2 text-sm"><span className="text-text-muted">Estimated Fare</span><span>PKR {estimatedFare}</span></div>
-              <div className="flex justify-between mb-2 text-sm"><span className="text-text-muted">Pickup</span><span>{locations.find(l => l.LocationID === pickup)?.LocationName}</span></div>
-              <div className="flex justify-between mb-4 text-sm"><span className="text-text-muted">Dropoff</span><span>{locations.find(l => l.LocationID === dropoff)?.LocationName}</span></div>
-              <hr className="border-glass-border my-4" />
-              <Button className="w-full" onClick={handleBook} loading={loading}>Book Now</Button>
-              <Button variant="glass" className="w-full mt-2" onClick={() => setStep(2)}>Back</Button>
-            </GlassCard>
-          </div>
+
+              {/* Booking Details */}
+              <div className="space-y-6">
+                <GlassCard tier={2} className="p-6">
+                  <h4 className="text-lg font-display mb-6 text-soft-gold">Booking Details</h4>
+                  
+                  <div className="space-y-4">
+                    {/* Vehicle Type */}
+                    <div className="flex items-center justify-between p-3 bg-glass-bg-light rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{selectedVehicle?.Type === 'Bike' ? '🏍️' : selectedVehicle?.Type === 'Business' ? '💼' : '🚗'}</span>
+                        <div>
+                          <div className="font-medium text-white">{selectedVehicle?.Type}</div>
+                          <div className="text-xs text-text-muted">{selectedVehicle?.Available} available</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Route Summary */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center">
+                          <MapPin className="text-amber-500" size={16} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm text-text-muted">From</div>
+                          <div className="text-white font-medium">{locations.find(l => l.LocationID === pickup)?.LocationName}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center">
+                          <MapPin className="text-emerald-500" size={16} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm text-text-muted">To</div>
+                          <div className="text-white font-medium">{locations.find(l => l.LocationID === dropoff)?.LocationName}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fare Breakdown */}
+                    <div className="bg-glass-bg-light rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-muted">Base Fare</span>
+                        <span className="text-white">PKR {estimatedFare ? Math.round(estimatedFare * 0.7) : 0}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-muted">Distance</span>
+                        <span className="text-white">PKR {estimatedFare ? Math.round(estimatedFare * 0.3) : 0}</span>
+                      </div>
+                      <hr className="border-glass-border" />
+                      <div className="flex justify-between font-bold text-lg">
+                        <span className="text-amber-500">Total</span>
+                        <span className="text-amber-500">PKR {estimatedFare || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <Button 
+                    className="w-full py-4 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300 text-lg font-semibold"
+                    onClick={handleBook} 
+                    loading={loading}
+                    disabled={!pickup || !dropoff || !selectedVehicle}
+                  >
+                    {loading ? 'Booking...' : 'Book Now'}
+                  </Button>
+                  <Button 
+                    variant="glass" 
+                    className="w-full py-3"
+                    onClick={() => setStep(2)}
+                  >
+                    ← Back to Vehicle Selection
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
         </div>
       )}
 
