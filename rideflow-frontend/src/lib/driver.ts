@@ -35,7 +35,7 @@ export const driverAPI = {
   getMyPayments: () => api.get('/driver/payments'),
 
   // Ratings
-  rateRider: (rideID: number, rating: number, comment: string) => api.post('/driver/ratings', { rideID, rating, comment }),
+  rateRide: (id: number, data: object) => api.post(`/driver/rides/${id}/rate`, data),
   getMyRatings: () => api.get('/driver/ratings'),
 
   // Notifications

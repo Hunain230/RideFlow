@@ -1,0 +1,111 @@
+{
+  "timestamp": "2026-05-08T10:36:29.533Z",
+  "summary": {
+    "total": 20,
+    "passed": 12,
+    "failed": 8,
+    "successRate": "60.0"
+  },
+  "details": [
+    {
+      "test": "Database Cleanup",
+      "status": "PASSED",
+      "message": "Test data cleaned successfully"
+    },
+    {
+      "test": "Create admin User",
+      "status": "PASSED",
+      "message": "User test.admin@rideflow.com created successfully"
+    },
+    {
+      "test": "Create rider User",
+      "status": "PASSED",
+      "message": "User test.rider@rideflow.com created successfully"
+    },
+    {
+      "test": "Create driver User",
+      "status": "PASSED",
+      "message": "User test.driver@rideflow.com created successfully"
+    },
+    {
+      "test": "admin Login",
+      "status": "PASSED",
+      "message": "Authentication successful"
+    },
+    {
+      "test": "admin Profile",
+      "status": "PASSED",
+      "message": "Protected route access successful"
+    },
+    {
+      "test": "rider Login",
+      "status": "PASSED",
+      "message": "Authentication successful"
+    },
+    {
+      "test": "rider Profile",
+      "status": "PASSED",
+      "message": "Protected route access successful"
+    },
+    {
+      "test": "driver Login",
+      "status": "PASSED",
+      "message": "Authentication successful"
+    },
+    {
+      "test": "driver Profile",
+      "status": "PASSED",
+      "message": "Protected route access successful"
+    },
+    {
+      "test": "Get Driver Profile",
+      "status": "PASSED",
+      "message": "Profile retrieved successfully"
+    },
+    {
+      "test": "Update Driver Profile",
+      "status": "FAILED",
+      "message": "Profile update failed"
+    },
+    {
+      "test": "Register Vehicle",
+      "status": "FAILED",
+      "message": "Vehicle registration failed"
+    },
+    {
+      "test": "Toggle Availability",
+      "status": "FAILED",
+      "message": "Availability update failed"
+    },
+    {
+      "test": "Create Ride Request",
+      "status": "FAILED",
+      "message": "Ride request creation failed"
+    },
+    {
+      "test": "Payment Tests",
+      "status": "FAILED",
+      "message": "No completed ride available"
+    },
+    {
+      "test": "Ratings Tests",
+      "status": "FAILED",
+      "message": "Required data not available"
+    },
+    {
+      "test": "Get All Users",
+      "status": "PASSED",
+      "message": "Admin can retrieve all users"
+    },
+    {
+      "test": "Verify Driver",
+      "status": "FAILED",
+      "message": "Driver verification failed"
+    },
+    {
+      "test": "Verify Vehicle",
+      "status": "FAILED",
+      "message": "Vehicle verification failed"
+    }
+  ]
+}

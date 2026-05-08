@@ -17,6 +17,7 @@ import { SafetyPanel } from '../../components/driver/SafetyPanel';
 import { NotificationCenter } from '../../components/driver/NotificationCenter';
 import { ConnectionStatus } from '../../components/driver/ConnectionStatus';
 import { useWebSocket, useGeolocation } from '../../hooks/useWebSocket';
+import { RatingModal } from '../../components/driver/RatingModal';
 
 export function DriverDashboard() {
   const [activeTab, setActiveTab] = useState('live');
@@ -225,6 +226,8 @@ function LiveTab({
   const [incomingRide, setIncomingRide] = useState<any>(null);
   const [activeRide, setActiveRide] = useState<any>(null);
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [completedRide, setCompletedRide] = useState<any>(null);
 
   // Fetch status and active rides on mount
   useEffect(() => {
@@ -345,21 +348,32 @@ function LiveTab({
     }
   }
 
-  const handleComplete = async () => {
-    try {
-      // Use WebSocket for real-time completion
-      wsCompleteRide(activeRide.RideID);
-      
-      // Also update via API for consistency
-      await driverAPI.completeRide(activeRide.RideID);
-      
-      setActiveRide(null);
-      toast.success('Ride completed! Earnings added to wallet.');
-    } catch (err) {
-      toast.error('Failed to complete ride');
-    }
-  };
+const handleComplete = async () => {
+if (!activeRide) return;
+try {
+await driverAPI.completeRide(activeRide.RideID);
+        
+setCompletedRide(activeRide);
+setActiveRide(null);
+setShowRatingModal(true);
+toast.success('Ride completed! Rate your rider.');
+} catch (err) {
+toast.error('Failed to complete ride');
+}
+};
 
+return (
+<div className="flex flex-col gap-8 h-full">
+<GlassCard tier={2} className="p-8 flex flex-col items-center justify-center text-center py-16">
+<div className="relative mb-8 scale-150">
+<Toggle checked={isOnline} onChange={toggleOnline} />
+{isOnline && (
+<div className="absolute -top-2 -right-2 w-4 h-4 bg-success rounded-full border-2 border-bg-surface animate-pulse-glow" />
+)}
+</div>
+<h2 className="text-3xl font-display mb-2">{isOnline ? "You're Online" : "You're Offline"}</h2>
+<p className="text-text-muted">{isOnline ? 'Searching for nearby riders...' : 'Go online to start receiving ride requests'}</p>
+</GlassCard>
   return (
     <div className="flex flex-col gap-8 h-full">
       <GlassCard tier={2} className="p-8 flex flex-col items-center justify-center text-center py-16">

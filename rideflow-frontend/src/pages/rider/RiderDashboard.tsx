@@ -457,7 +457,7 @@ function BookTab() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <Button variant="glass" onClick={() => riderAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>
-                    <Button variant="glass" className="text-error border-error/30 hover:border-error" onClick={handleCancel}>Cancel Ride</Button>
+                    <Button variant="glass" className="text-error border-error/30 hover:border-error" onClick={() => handleCancel()}>Cancel Ride</Button>
                   </div>
                 </GlassCard>
               ) : rideState.RideStatus === 'InProgress' ? (
