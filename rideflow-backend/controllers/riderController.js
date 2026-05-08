@@ -274,15 +274,57 @@ const getRideDetail = asyncHandler(async (req, res) => {
 
 // PATCH /api/rider/rides/:id/cancel
 const cancelRide = asyncHandler(async (req, res) => {
-  const [result] = await db.query(
-    `UPDATE RIDES SET RideStatus = 'Cancelled'
-     WHERE RideID = ? AND CustomerID = ? AND RideStatus = 'Requested'`,
+  const { reason } = req.body;
+
+  // Get ride details before cancelling
+  const [[ride]] = await db.query(
+    `SELECT r.RideID, r.RideStatus, r.DriverID, r.CustomerID
+     FROM RIDES r
+     WHERE r.RideID = ? AND r.CustomerID = ?`,
     [req.params.id, req.user.userID]
   );
-  if (!result.affectedRows) {
-    return sendError(res, 'Cannot cancel — ride not found or already accepted/completed.');
+
+  if (!ride) {
+    return sendError(res, 'Ride not found.', 404);
   }
-  return sendSuccess(res, null, 'Ride cancelled');
+
+  // Allow cancellation only if ride is Requested or Accepted
+  if (!['Requested', 'Accepted'].includes(ride.RideStatus)) {
+    return sendError(res, 'Cannot cancel — ride is already in progress or completed.');
+  }
+
+  const [result] = await db.query(
+    `UPDATE RIDES SET RideStatus = 'Cancelled'
+     WHERE RideID = ? AND CustomerID = ? AND RideStatus IN ('Requested', 'Accepted')`,
+    [req.params.id, req.user.userID]
+  );
+
+  if (!result.affectedRows) {
+    return sendError(res, 'Cannot cancel — ride not found or already in progress/completed.');
+  }
+
+  // Notify driver if ride was accepted
+  if (ride.DriverID) {
+    const { emitToUser } = require('../config/socket');
+    const db = require('../config/db');
+    const [[driver]] = await db.query(
+      'SELECT UserID FROM DRIVERS WHERE DriverID = ?',
+      [ride.DriverID]
+    );
+    if (driver) {
+      emitToUser(driver.UserID, 'ride_cancelled_by_rider', {
+        rideId: ride.RideID,
+        reason: reason || 'Rider cancelled',
+        timestamp: new Date()
+      });
+    }
+  }
+
+  return sendSuccess(res, {
+    rideID: req.params.id,
+    rideStatus: 'Cancelled',
+    refundAmount: 0
+  }, 'Ride cancelled');
 });
 
 // ─── Payments ─────────────────────────────────────────────────

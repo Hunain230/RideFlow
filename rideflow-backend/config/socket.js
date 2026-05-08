@@ -212,6 +212,28 @@ const handleDriverConnection = (socket) => {
     }
   });
 
+  // Handle ride rejection
+  socket.on('reject_ride', async (data) => {
+    try {
+      const { rideId, reason } = data;
+
+      // Reject ride through controller
+      await require('../controllers/driverController').rejectRide(
+        { params: { id: rideId }, body: { reason }, user: { userID: driverId } },
+        { json: () => {} }
+      );
+
+      // Confirm rejection to driver
+      socket.emit('ride_rejected', {
+        rideId,
+        status: 'Rejected',
+        timestamp: new Date()
+      });
+    } catch (error) {
+      socket.emit('error', { message: 'Failed to reject ride' });
+    }
+  });
+
   // Handle ride start
   socket.on('start_ride', async (data) => {
     try {

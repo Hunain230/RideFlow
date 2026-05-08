@@ -119,6 +119,11 @@ class SocketService {
       this.handleRideTaken(data);
     });
 
+    this.socket.on('ride_rejected_available', (data) => {
+      console.log('Ride available after rejection:', data);
+      this.handleRideRejectedAvailable(data);
+    });
+
     this.socket.on('ride_status_update', (data) => {
       console.log('Ride status updated:', data);
       this.handleRideStatusUpdate(data);
@@ -173,6 +178,11 @@ class SocketService {
   private handleRideTaken(data: any) {
     window.dispatchEvent(new CustomEvent('ride_taken', { detail: data }));
     toast.info('Ride was taken by another driver');
+  }
+
+  private handleRideRejectedAvailable(data: any) {
+    window.dispatchEvent(new CustomEvent('ride_rejected_available', { detail: data }));
+    toast.info(`Ride #${data.rideId} is available again`);
   }
 
   private handleRideStatusUpdate(data: any) {
@@ -251,6 +261,10 @@ class SocketService {
 
   acceptRide(rideId: number, vehicleID: number) {
     this.emit('accept_ride', { rideId, vehicleID });
+  }
+
+  rejectRide(rideId: number, reason?: string) {
+    this.emit('reject_ride', { rideId, reason });
   }
 
   startRide(rideId: number) {

@@ -153,15 +153,17 @@ function BookTab() {
     }
   };
 
-  const handleCancel = async () => {
+  const handleCancel = async (reason?: string) => {
     if (!activeRideId) return;
     try {
-      await riderAPI.cancelRide(activeRideId);
+      await riderAPI.cancelRide(activeRideId, reason || 'Rider cancelled');
       toast.success('Ride cancelled');
       setStep(1);
       setActiveRideId(null);
       setRideState(null);
-    } catch(err) { toast.error('Cannot cancel ride at this time'); }
+    } catch(err: any) {
+      toast.error(err.response?.data?.message || 'Cannot cancel ride at this time');
+    }
   };
 
   return (

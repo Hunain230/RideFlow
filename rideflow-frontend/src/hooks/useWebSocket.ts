@@ -111,6 +111,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     socketService.acceptRide(rideId, vehicleID);
   }, []);
 
+  const rejectRide = useCallback((rideId: number, reason?: string) => {
+    socketService.rejectRide(rideId, reason);
+  }, []);
+
   const startRide = useCallback((rideId: number) => {
     socketService.startRide(rideId);
   }, []);
@@ -164,6 +168,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     goOffline,
     updateLocation,
     acceptRide,
+    rejectRide,
     startRide,
     completeRide,
     sendSOS,

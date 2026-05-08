@@ -311,18 +311,135 @@ const startRide = asyncHandler(async (req, res) => {
   return sendSuccess(res, null, 'Ride started');
 });
 
-// PATCH /api/driver/rides/:id/complete
-const completeRide = asyncHandler(async (req, res) => {
+// PATCH /api/driver/rides/:id/reject
+const rejectRide = asyncHandler(async (req, res) => {
+  const { reason } = req.body;
   const [[driver]] = await db.query(
     'SELECT DriverID FROM DRIVERS WHERE UserID = ?', [req.user.userID]);
-  const [result] = await db.query(
-    `UPDATE RIDES SET RideStatus = 'Completed', EndTime = NOW()
-     WHERE RideID = ? AND DriverID = ? AND RideStatus = 'InProgress'`,
+
+  // Get the ride to check current status and get customer info
+  const [[ride]] = await db.query(
+    `SELECT r.RideID, r.RideStatus, r.CustomerID, r.PickupLocationID
+     FROM RIDES r
+     WHERE r.RideID = ? AND r.RideStatus = 'Requested'`,
+    [req.params.id]
+  );
+
+  if (!ride) {
+    return sendError(res, 'Ride not found or no longer available.', 404);
+  }
+
+  // Log the rejection (optional - could track in a separate table)
+  // For now, just notify other drivers about the available ride
+  const { emitToDrivers, emitToUser } = require('../config/socket');
+
+  // Notify other online drivers that this ride is still available
+  emitToDrivers('ride_rejected_available', {
+    rideId: ride.RideID,
+    rejectedByDriverId: driver.DriverID,
+    pickupLocationID: ride.PickupLocationID,
+    reason: reason || 'Driver unavailable',
+    timestamp: new Date()
+  });
+
+  // Notify customer that driver declined (but ride is still searching)
+  emitToUser(ride.CustomerID, 'driver_rejected_ride', {
+    rideId: ride.RideID,
+    message: 'Driver declined. Searching for another driver...',
+    timestamp: new Date()
+  });
+
+  return sendSuccess(res, {
+    rideID: ride.RideID,
+    rideStatus: 'Requested',
+    message: 'Ride rejected. Other drivers will be notified.'
+  }, 'Ride rejected');
+});
+
+// PATCH /api/driver/rides/:id/complete
+const completeRide = asyncHandler(async (req, res) => {
+  const { finalLatitude, finalLongitude, actualDistance, actualFare, paymentMethod } = req.body;
+  const [[driver]] = await db.query(
+    'SELECT DriverID, CommissionRate FROM DRIVERS WHERE UserID = ?', [req.user.userID]);
+
+  // Get ride details before completing
+  const [[ride]] = await db.query(
+    `SELECT r.RideID, r.CustomerID, r.Fare, r.Distance
+     FROM RIDES r
+     WHERE r.RideID = ? AND r.DriverID = ? AND r.RideStatus = 'InProgress'`,
     [req.params.id, driver.DriverID]
   );
-  if (!result.affectedRows) return sendError(res, 'Cannot complete — ride not found or wrong status.');
-  // Trigger trg_DriverOnlineAfterRide fires here automatically
-  return sendSuccess(res, null, 'Ride completed. You are now Online again.');
+
+  if (!ride) {
+    return sendError(res, 'Cannot complete — ride not found or wrong status.');
+  }
+
+  // Use provided values or defaults from ride
+  const finalDistance = actualDistance || ride.Distance;
+  const finalFare = actualFare || ride.Fare;
+  const payMethod = paymentMethod || 'Cash';
+
+  // Complete the ride
+  const [result] = await db.query(
+    `UPDATE RIDES SET RideStatus = 'Completed', EndTime = NOW(),
+     Distance = ?, Fare = ?
+     WHERE RideID = ? AND DriverID = ? AND RideStatus = 'InProgress'`,
+    [finalDistance, finalFare, req.params.id, driver.DriverID]
+  );
+
+  if (!result.affectedRows) {
+    return sendError(res, 'Cannot complete — ride not found or wrong status.');
+  }
+
+  // Create payment record
+  const commissionRate = driver.CommissionRate || 10.00;
+  const platformCommission = (finalFare * commissionRate) / 100;
+  const driverEarnings = finalFare - platformCommission;
+
+  try {
+    // Check if payment already exists (from triggers)
+    const [[existingPayment]] = await db.query(
+      'SELECT PaymentID FROM PAYMENTS WHERE RideID = ?',
+      [req.params.id]
+    );
+
+    if (!existingPayment) {
+      // Create payment record
+      await db.query(
+        `INSERT INTO PAYMENTS (RideID, CustomerID, Amount, PaymentMethod, PaymentStatus)
+         VALUES (?, ?, ?, ?, 'Pending')`,
+        [req.params.id, ride.CustomerID, finalFare, payMethod]
+      );
+    }
+
+    // Credit driver wallet
+    await db.query(
+      'UPDATE DRIVERS SET WalletBalance = WalletBalance + ?, AvailabilityStatus = "Online" WHERE DriverID = ?',
+      [driverEarnings, driver.DriverID]
+    );
+
+    // Emit real-time completion notification
+    const { emitToUser } = require('../config/socket');
+    emitToUser(ride.CustomerID, 'ride_completed', {
+      rideId: ride.RideID,
+      endTime: new Date(),
+      totalFare: finalFare,
+      driverEarnings,
+      platformCommission
+    });
+
+  } catch (err) {
+    console.error('Payment/wallet update error:', err);
+  }
+
+  return sendSuccess(res, {
+    rideID: req.params.id,
+    rideStatus: 'Completed',
+    endTime: new Date(),
+    totalFare: finalFare,
+    driverEarnings: finalFare - ((finalFare * (driver.CommissionRate || 10)) / 100),
+    platformCommission: (finalFare * (driver.CommissionRate || 10)) / 100
+  }, 'Ride completed. You are now Online again.');
 });
 
 // GET /api/driver/rides
@@ -600,7 +717,7 @@ module.exports = {
   getProfile, updateProfile, setAvailability, updateLocation,
   getMyVehicles, addVehicle, editVehicle, removeVehicle,
   uploadProfilePhoto, uploadDocuments, requestVerification,
-  getIncomingRides, createRideRequest, acceptRide, startRide, completeRide, getMyRides,
+  getIncomingRides, createRideRequest, acceptRide, rejectRide, startRide, completeRide, getMyRides,
   getEarnings, getWallet, requestPayout, getMyPayments,
   rateRider, getMyRatings,
   getNotifications, markNotificationRead,

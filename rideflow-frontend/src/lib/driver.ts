@@ -23,8 +23,10 @@ export const driverAPI = {
   createRideRequest: (data: any) => api.post('/driver/rides/request', data),
   getMyRides: () => api.get('/driver/rides'),
   acceptRide: (rideID: number, vehicleID: number) => api.patch(`/driver/rides/${rideID}/accept`, { vehicleID }),
+  rejectRide: (rideID: number, reason?: string) => api.patch(`/driver/rides/${rideID}/reject`, { reason }),
   startRide: (rideID: number) => api.patch(`/driver/rides/${rideID}/start`),
-  completeRide: (rideID: number) => api.patch(`/driver/rides/${rideID}/complete`),
+  completeRide: (rideID: number, data?: { actualDistance?: number; actualFare?: number; paymentMethod?: string }) =>
+    api.patch(`/driver/rides/${rideID}/complete`, data),
 
   // Earnings & Wallet
   getEarnings: () => api.get('/driver/earnings'),

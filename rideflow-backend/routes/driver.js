@@ -41,6 +41,7 @@ router.get   ('/rides/incoming',            C.getIncomingRides);
 router.post  ('/rides/request',             C.createRideRequest);
 router.get   ('/rides',                     C.getMyRides);
 router.patch ('/rides/:id/accept',          C.acceptRide);
+router.patch ('/rides/:id/reject',          C.rejectRide);
 router.patch ('/rides/:id/start',           C.startRide);
 router.patch ('/rides/:id/complete',        C.completeRide);
 

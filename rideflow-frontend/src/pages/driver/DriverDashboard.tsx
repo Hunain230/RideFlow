@@ -32,6 +32,7 @@ export function DriverDashboard() {
     goOnline: wsGoOnline,
     goOffline: wsGoOffline,
     acceptRide: wsAcceptRide,
+    rejectRide: wsRejectRide,
     startRide: wsStartRide,
     completeRide: wsCompleteRide,
     reconnect
@@ -143,13 +144,14 @@ export function DriverDashboard() {
             className="h-full"
           >
             {activeTab === 'live' && (
-              <LiveTab 
-                profile={profile} 
+              <LiveTab
+                profile={profile}
                 onProfileUpdate={fetchProfile}
                 isConnected={isConnected}
                 wsGoOnline={wsGoOnline}
                 wsGoOffline={wsGoOffline}
                 wsAcceptRide={wsAcceptRide}
+                wsRejectRide={wsRejectRide}
                 wsStartRide={wsStartRide}
                 wsCompleteRide={wsCompleteRide}
                 currentLocation={currentLocation}
@@ -194,24 +196,26 @@ export function DriverDashboard() {
   );
 }
 
-function LiveTab({ 
-  profile, 
-  onProfileUpdate, 
+function LiveTab({
+  profile,
+  onProfileUpdate,
   isConnected,
   wsGoOnline,
   wsGoOffline,
   wsAcceptRide,
+  wsRejectRide,
   wsStartRide,
   wsCompleteRide,
   currentLocation,
   getCurrentPosition
-}: { 
-  profile: any; 
+}: {
+  profile: any;
   onProfileUpdate: () => void;
   isConnected: boolean;
   wsGoOnline: (locationID?: number, vehicleID?: number) => void;
   wsGoOffline: () => void;
   wsAcceptRide: (rideId: number, vehicleID: number) => void;
+  wsRejectRide: (rideId: number, reason?: string) => void;
   wsStartRide: (rideId: number) => void;
   wsCompleteRide: (rideId: number) => void;
   currentLocation: { latitude: number; longitude: number } | null;
@@ -293,13 +297,13 @@ function LiveTab({
     try {
       const v = vehicles.find(v => v.VerificationStatus === 'Verified');
       if (!v) return toast.error('You need a verified vehicle to accept rides');
-      
+
       // Use WebSocket for real-time acceptance
       wsAcceptRide(incomingRide.RideID, v.VehicleID);
-      
+
       // Also update via API for consistency
       await driverAPI.acceptRide(incomingRide.RideID, v.VehicleID);
-      
+
       const res = await driverAPI.getMyRides();
       setActiveRide(res.data.data.find((r: any) => r.RideID === incomingRide.RideID));
       setIncomingRide(null);
@@ -307,6 +311,22 @@ function LiveTab({
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to accept ride');
       setIncomingRide(null); // maybe someone else took it
+    }
+  };
+
+  const handleReject = async (reason?: string) => {
+    try {
+      // Use WebSocket for real-time rejection
+      wsRejectRide(incomingRide.RideID, reason || 'Driver unavailable');
+
+      // Also update via API for consistency
+      await driverAPI.rejectRide(incomingRide.RideID, reason);
+
+      setIncomingRide(null);
+      toast.info('Ride declined. Waiting for more requests...');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to reject ride');
+      setIncomingRide(null);
     }
   };
 
@@ -378,7 +398,7 @@ function LiveTab({
               </div>
 
               <div className="flex gap-4">
-                <Button variant="glass" className="flex-1 text-error hover:border-error" onClick={() => setIncomingRide(null)}>Decline</Button>
+                <Button variant="glass" className="flex-1 text-error hover:border-error" onClick={() => handleReject('Driver declined')}>Decline</Button>
                 <Button variant="neon" className="flex-1" onClick={handleAccept}>Accept Ride</Button>
               </div>
             </GlassCard>
