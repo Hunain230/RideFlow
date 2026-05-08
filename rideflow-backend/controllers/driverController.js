@@ -226,7 +226,7 @@ const createRideRequest = asyncHandler(async (req, res) => {
     const ride = rideDetails[0];
     
     // Emit real-time event to online drivers in the pickup location
-    const { emitToLocation, emitToUser } = require('./socket');
+    const { emitToLocation, emitToUser } = require('../config/socket');
     emitToLocation(pickupLocationID, 'new_ride_request', {
       rideId: ride.RideID,
       customerName: ride.CustomerName,
@@ -293,7 +293,7 @@ const acceptRide = asyncHandler(async (req, res) => {
     const ride = rideDetails[0];
     
     // Emit real-time events
-    const { emitToUser, emitToDrivers } = require('./socket');
+    const { emitToUser, emitToDrivers } = require('../config/socket');
     
     // Notify customer that ride was accepted
     emitToUser(ride.CustomerID, 'ride_accepted', {
