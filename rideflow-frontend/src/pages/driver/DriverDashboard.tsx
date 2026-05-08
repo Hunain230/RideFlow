@@ -25,6 +25,8 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { toast } from '../../components/ui/Toast';
 import { driverAPI } from '../../lib/driver';
 import { fadeSlideUp } from '../../motion/presets';
+import { useWebSocket } from '../../hooks/useWebSocket';
+import { DriverRatingModal } from '../../components/driver/DriverRatingModal';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -37,6 +39,40 @@ export function DriverDashboard() {
   const [wallet, setWallet] = useState<any>({});
   const [ratings, setRatings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // WebSocket integration for real-time updates
+  const [ratingModalOpen, setRatingModalOpen] = useState(false);
+
+  useWebSocket({
+    onRideAccepted: (data) => {
+      // Remove ride from incoming rides when accepted
+      setIncomingRides(prev => prev.filter(ride => ride.RideID !== data.rideId));
+      setMyRides(prev => [...prev, data]);
+      toast.success('Ride accepted by another driver!');
+    },
+    onRideRejected: (data) => {
+      // Remove ride from incoming rides when rejected
+      setIncomingRides(prev => prev.filter(ride => ride.RideID !== data.rideId));
+      toast.info('Ride was rejected by another driver');
+    },
+    onRideStatusUpdate: (data) => {
+      // Update ride status in real-time
+      setMyRides(prev => 
+        prev.map(ride => 
+          ride.RideID === data.rideId 
+            ? { ...ride, RideStatus: data.status }
+            : ride
+        )
+      );
+    },
+    onRideCompleted: (data) => {
+      // Show rating modal when driver completes ride
+      const completedRide = myRides.find(ride => ride.RideID === data.rideId && ride.RideStatus === 'Completed');
+      if (completedRide && !ratingModalOpen) {
+        setRatingModalOpen(true);
+      }
+    }
+  });
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={20} /> },
@@ -169,10 +205,26 @@ export function DriverDashboard() {
             {activeTab === 'rides' && <RidesTab incomingRides={incomingRides} myRides={myRides} onAcceptRide={handleAcceptRide} onRejectRide={handleRejectRide} onStartRide={handleStartRide} onCompleteRide={handleCompleteRide} loading={loading} />}
             {activeTab === 'earnings' && <EarningsTab earnings={earnings} wallet={wallet} loading={loading} />}
             {activeTab === 'analytics' && <AnalyticsTab loading={loading} />}
-            {activeTab === 'profile' && <ProfileTab profile={profile} onUpdate={fetchDashboardData} loading={loading} />}
+            {activeTab === 'profile' && <ProfileTab />}
           </motion.div>
         </AnimatePresence>
       </main>
+      
+      {/* Driver Rating Modal */}
+      <DriverRatingModal
+        isOpen={ratingModalOpen}
+        onClose={() => setRatingModalOpen(false)}
+        rideId={myRides.find(ride => ride.RideStatus === 'Completed')?.RideID || 0}
+        riderName={myRides.find(ride => ride.RideStatus === 'Completed')?.RiderName || 'Rider'}
+        onSubmit={(rating) => {
+          driverAPI.rateRide(
+            myRides.find(ride => ride.RideStatus === 'Completed')?.RideID || 0,
+            rating
+          );
+          setRatingModalOpen(false);
+          toast.success('Thank you for rating your rider!');
+        }}
+      />
     </DashboardLayout>
   );
 }

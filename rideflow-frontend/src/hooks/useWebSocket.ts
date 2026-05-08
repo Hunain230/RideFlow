@@ -11,6 +11,11 @@ interface UseWebSocketOptions {
   onEmergencyNearby?: (data: any) => void;
   onStatusUpdated?: (data: any) => void;
   onNotification?: (data: any) => void;
+  onRideAccepted?: (data: any) => void;
+  onRideRejected?: (data: any) => void;
+  onRideStarted?: (data: any) => void;
+  onRideCompleted?: (data: any) => void;
+  onRideCancelled?: (data: any) => void;
 }
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
@@ -124,7 +129,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }, []);
 
   const sendSOS = useCallback((rideId?: number, location?: { latitude: number; longitude: number }) => {
-    const sosLocation = location ? { lat: location.latitude, lng: location.longitude } : location;
+    const sosLocation = location ? { lat: location.latitude, lng: location.longitude } : { lat: 0, lng: 0 };
     socketService.sendSOS(rideId, sosLocation);
   }, []);
 

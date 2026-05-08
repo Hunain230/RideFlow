@@ -14,9 +14,60 @@ import { riderAPI } from '../../lib/rider';
 import { fadeSlideUp } from '../../motion/presets';
 import { NotificationCenter } from '../../components/rider/NotificationCenter';
 import { RatingModal } from '../../components/rider/RatingModal';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 export function RiderDashboard() {
   const [activeTab, setActiveTab] = useState('book');
+  const [ratingModalShown, setRatingModalShown] = useState(false);
+
+  // WebSocket integration for real-time ride updates
+  useWebSocket({
+    onRideAccepted: (data) => {
+      // Update ride status when driver accepts
+      setRideState(prev => prev && prev.RideID === data.rideId 
+        ? { ...prev, RideStatus: 'Accepted' }
+        : prev
+      );
+      toast.success('Driver accepted your ride!');
+    },
+    onRideRejected: (data) => {
+      // Handle ride rejection
+      if (rideState && rideState.RideID === data.rideId) {
+        setRideState(null);
+        setStep(1);
+        setActiveRideId(null);
+        toast.info('Your ride was rejected by the driver');
+      }
+    },
+    onRideStarted: (data) => {
+      // Update ride status when driver starts
+      setRideState(prev => prev && prev.RideID === data.rideId 
+        ? { ...prev, RideStatus: 'InProgress' }
+        : prev
+      );
+      toast.info('Driver has started your ride!');
+    },
+    onRideCompleted: (data) => {
+      // Handle ride completion
+      if (rideState && rideState.RideID === data.rideId) {
+        setRideState(prev => prev && prev.RideID === data.rideId 
+          ? { ...prev, RideStatus: 'Completed' }
+          : prev
+        );
+        setStep(5);
+        toast.success('Ride completed successfully!');
+      }
+    },
+    onRideCancelled: (data) => {
+      // Handle ride cancellation
+      if (rideState && rideState.RideID === data.rideId) {
+        setRideState(null);
+        setStep(1);
+        setActiveRideId(null);
+        toast.info('Your ride was cancelled');
+      }
+    }
+  });
 
   const navItems = [
     { id: 'book', label: 'Book a Ride', icon: <Navigation size={20} /> },
@@ -48,6 +99,28 @@ export function RiderDashboard() {
             {activeTab === 'book' && <BookTab />}
             {activeTab === 'trips' && <TripsTab />}
             {activeTab === 'profile' && <ProfileTab />}
+            {ratingModalShown && (
+              <RatingModal
+                isOpen={true}
+                onClose={() => setRatingModalShown(false)}
+                rideId={activeRideId || 0}
+                driverName={rideState?.DriverName || 'Driver'}
+                onSubmit={(rating) => {
+                  riderAPI.rateRide(activeRideId || 0, rating);
+                  setRatingModalShown(false);
+                  toast.success('Thank you for rating your driver!');
+                }}
+                onComplaint={(complaint) => {
+                  riderAPI.fileComplaint({
+                    rideId: activeRideId || 0,
+                    complaintType: complaint.type,
+                    description: complaint.description
+                  });
+                  setRatingModalShown(false);
+                  toast.success('Complaint filed successfully!');
+                }}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -132,10 +205,14 @@ function BookTab() {
             setStep(4); // Driver accepted
           } else if (rideData.RideStatus === 'InProgress' && step !== 4) {
             setStep(4); // Ride started
-          } else if (rideData.RideStatus === 'Completed') {
+          } else if (res.data.data.RideStatus === 'Completed' || res.data.data.RideStatus === 'Cancelled') {
             clearInterval(interval);
             setStep(5); // Completion step
-            toast.success('Ride completed successfully!');
+            
+            // Show rating modal when ride is completed
+            if (res.data.data.RideStatus === 'Completed' && !ratingModalShown) {
+              setRatingModalShown(true);
+            }
           } else if (rideData.RideStatus === 'Cancelled') {
             clearInterval(interval);
             setStep(1); // Back to booking

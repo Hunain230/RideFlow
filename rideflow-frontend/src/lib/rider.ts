@@ -20,6 +20,7 @@ export const riderAPI = {
   rateRide:           (id: number, data: object) => api.post(`/rider/rides/${id}/rate`, data),
   rateDriver:         (data: object) => api.post('/rider/driver/rate', data),
   fileComplaint:       (data: object) => api.post('/rider/complaints', data),
+  fileComplaint:       (data: object) => api.post('/rider/complaints', data),
   getComplaints:       () => api.get('/rider/complaints'),
   getSavedLocations:   () => api.get('/rider/saved-locations'),
   addSavedLocation:    (data: object) => api.post('/rider/saved-locations', data),

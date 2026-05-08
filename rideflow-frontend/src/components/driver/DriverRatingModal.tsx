@@ -1,0 +1,195 @@
+import React, { useState } from 'react';
+import { Star, X, MessageCircle } from 'lucide-react';
+
+interface DriverRatingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  rideId: number;
+  riderName: string;
+  onSubmit: (rating: { score: number; comment?: string }) => void;
+  onComplaint?: (complaint: { type: string; description: string }) => void;
+  isLoading?: boolean;
+}
+
+export const DriverRatingModal: React.FC<DriverRatingModalProps> = ({
+  isOpen,
+  onClose,
+  riderName,
+  onSubmit,
+  onComplaint,
+  isLoading = false
+}) => {
+  const [mode, setMode] = useState<'rating' | 'complaint'>('rating');
+  const [score, setScore] = useState<number>(0);
+  const [comment, setComment] = useState<string>('');
+  const [complaintType, setComplaintType] = useState<string>('service');
+  const [complaintDescription, setComplaintDescription] = useState<string>('');
+  const [hoveredStar, setHoveredStar] = useState<number>(0);
+
+  if (!isOpen) return null;
+
+  const handleRatingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (score === 0) return;
+    
+    onSubmit({ score, comment: comment.trim() || undefined });
+    setScore(0);
+    setComment('');
+    onClose();
+  };
+
+  const handleComplaintSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!complaintDescription.trim()) return;
+    
+    if (onComplaint) {
+      onComplaint({ 
+        type: complaintType, 
+        description: complaintDescription.trim() 
+      });
+    }
+    setComplaintType('service');
+    setComplaintDescription('');
+    onClose();
+  };
+
+  const StarButton = ({ starValue }: { starValue: number }) => (
+    <button
+      type="button"
+      className="p-1 transition-colors"
+      onMouseEnter={() => setHoveredStar(starValue)}
+      onMouseLeave={() => setHoveredStar(0)}
+      onClick={() => setScore(starValue)}
+    >
+      <Star
+        className={`w-8 h-8 transition-colors ${
+          starValue <= (hoveredStar || score)
+            ? 'fill-yellow-400 text-yellow-400'
+            : 'text-gray-300'
+        }`}
+      />
+    </button>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Rate Your Rider</h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={mode === 'rating' ? handleRatingSubmit : handleComplaintSubmit} className="space-y-4">
+          {mode === 'rating' ? (
+            <>
+              <div>
+                <p className="text-sm text-gray-600 mb-2">
+                  How was your ride with <span className="font-medium">{riderName}</span>?
+                </p>
+                
+                <div className="flex gap-1 justify-center mb-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <StarButton key={star} starValue={star} />
+                  ))}
+                </div>
+                
+                <div className="text-center text-sm text-gray-500">
+                  {score === 1 && 'Poor'}
+                  {score === 2 && 'Fair'}
+                  {score === 3 && 'Good'}
+                  {score === 4 && 'Very Good'}
+                  {score === 5 && 'Excellent'}
+                </div>
+              </div>
+            
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <MessageCircle className="w-4 h-4" />
+                  Comment (Optional)
+                </label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Share your experience with this rider..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  rows={4}
+                  maxLength={500}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {comment.length}/500 characters
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  File a complaint about your ride with <span className="font-medium">{riderName}</span>
+                </p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Complaint Type
+                    </label>
+                    <select
+                      value={complaintType}
+                      onChange={(e) => setComplaintType(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="service">Service Quality</option>
+                      <option value="behavior">Rider Behavior</option>
+                      <option value="safety">Safety Concern</option>
+                      <option value="payment">Payment Issue</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={complaintDescription}
+                      onChange={(e) => setComplaintDescription(e.target.value)}
+                      placeholder="Please describe the issue in detail..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      rows={4}
+                      maxLength={1000}
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {complaintDescription.length}/1000 characters
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+          
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={mode === 'rating' ? score === 0 : !complaintDescription.trim()}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? 'Submitting...' : mode === 'rating' ? 'Submit Rating' : 'Submit Complaint'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
