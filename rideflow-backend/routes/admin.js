@@ -43,6 +43,8 @@ router.delete('/rides/:id',                 C.cancelRide);
 // ─── Ratings & Reviews ─────────────────────────────────────────────
 router.get   ('/ratings',                   C.getAllRatings);
 router.delete('/ratings/:rideId',           C.deleteRating);
+router.get   ('/drivers/:id/ratings',        C.getDriverRatings);
+router.get   ('/riders/:id/ratings',         C.getRiderRatings);
 
 // ─── Notifications ────────────────────────────────────────────────
 router.get   ('/notifications',             C.getAdminNotifications);

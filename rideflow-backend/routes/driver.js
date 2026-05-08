@@ -52,6 +52,7 @@ router.post  ('/payout',                    C.requestPayout);
 router.get   ('/payments',                  C.getMyPayments);
 
 // ─── Ratings ──────────────────────────────────────────────────
+router.post  ('/rides/:id/rate',            C.rateRide);
 router.post  ('/ratings',                   C.rateRider);
 router.get   ('/ratings',                   C.getMyRatings);
 

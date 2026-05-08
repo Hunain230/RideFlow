@@ -38,7 +38,9 @@ router.get   ('/promocodes',                C.getActivePromoCodes);
 router.get   ('/my-promocodes',             C.getMyPromoCodes);
 
 // ─── Ratings ──────────────────────────────────────────────────
+router.post  ('/rides/:id/rate',            C.rateRide);
 router.post  ('/ratings',                   C.rateDriver);
+router.get   ('/leaderboard',               C.getLeaderboard);
 
 // ─── Complaints ───────────────────────────────────────────────
 router.post  ('/complaints',                C.fileComplaint);

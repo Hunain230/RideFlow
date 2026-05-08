@@ -366,7 +366,7 @@ const cancelRide = asyncHandler(async (req, res) => {
 const getAllRatings = asyncHandler(async (req, res) => {
   const { minScore, maxScore, flagged } = req.query;
   let sql = `
-    SELECT r.*, 
+    SELECT r.RideID, r.RatedBy, r.RatedUserID, r.Score, r.Comment, r.Timestamp,
            CONCAT(rater.FirstName,' ',rater.LastName) AS RaterName,
            CONCAT(rated.FirstName,' ',rated.LastName) AS RatedUserName,
            rater.Role AS RaterRole, rated.Role AS RatedUserRole
@@ -383,22 +383,134 @@ const getAllRatings = asyncHandler(async (req, res) => {
   return sendSuccess(res, rows);
 });
 
-// DELETE /api/admin/ratings/:id
+// DELETE /api/admin/ratings/:rideId
 const deleteRating = asyncHandler(async (req, res) => {
   await db.query('DELETE FROM RATINGS WHERE RideID = ? AND RatedBy = ?', 
     [req.params.rideId, req.query.ratedBy]);
   return sendSuccess(res, null, 'Rating deleted');
 });
 
+// GET /api/admin/drivers/:id/ratings
+const getDriverRatings = asyncHandler(async (req, res) => {
+  const driverID = req.params.id;
+  
+  const [driver] = await db.query(
+    'SELECT d.DriverID, CONCAT(u.FirstName, " ", u.LastName) AS DriverName FROM DRIVERS d JOIN USERS u ON d.UserID = u.UserID WHERE d.DriverID = ?',
+    [driverID]
+  );
+  
+  if (!driver.length) {
+    return sendError(res, 'Driver not found.', 404);
+  }
+
+  // Get rating statistics
+  const [stats] = await db.query(`
+    SELECT 
+      COUNT(*) as TotalRatings,
+      ROUND(AVG(r.Score), 2) as AverageRating,
+      SUM(CASE WHEN r.Score = 5 THEN 1 ELSE 0 END) as Stars5,
+      SUM(CASE WHEN r.Score = 4 THEN 1 ELSE 0 END) as Stars4,
+      SUM(CASE WHEN r.Score = 3 THEN 1 ELSE 0 END) as Stars3,
+      SUM(CASE WHEN r.Score = 2 THEN 1 ELSE 0 END) as Stars2,
+      SUM(CASE WHEN r.Score = 1 THEN 1 ELSE 0 END) as Stars1
+    FROM RATINGS r
+    WHERE r.RatedUserID = (SELECT UserID FROM DRIVERS WHERE DriverID = ?)
+  `, [driverID]);
+
+  // Get recent ratings
+  const [recentRatings] = await db.query(`
+    SELECT r.Score, r.Comment, r.Timestamp,
+           CONCAT(rater.FirstName, ' ', rater.LastName) AS RatedBy
+    FROM RATINGS r
+    JOIN USERS rater ON r.RatedBy = rater.UserID
+    WHERE r.RatedUserID = (SELECT UserID FROM DRIVERS WHERE DriverID = ?)
+    ORDER BY r.Timestamp DESC
+    LIMIT 10
+  `, [driverID]);
+
+  const ratingData = {
+    driverID: driverID,
+    driverName: driver[0].DriverName,
+    totalRatings: stats[0].TotalRatings || 0,
+    averageRating: stats[0].AverageRating || 0,
+    ratingDistribution: {
+      "5stars": stats[0].Stars5 || 0,
+      "4stars": stats[0].Stars4 || 0,
+      "3stars": stats[0].Stars3 || 0,
+      "2stars": stats[0].Stars2 || 0,
+      "1stars": stats[0].Stars1 || 0
+    },
+    recentRatings: recentRatings
+  };
+
+  return sendSuccess(res, ratingData);
+});
+
+// GET /api/admin/riders/:id/ratings
+const getRiderRatings = asyncHandler(async (req, res) => {
+  const riderID = req.params.id;
+  
+  const [rider] = await db.query(
+    'SELECT CONCAT(FirstName, " ", LastName) AS RiderName FROM USERS WHERE UserID = ?',
+    [riderID]
+  );
+  
+  if (!rider.length) {
+    return sendError(res, 'Rider not found.', 404);
+  }
+
+  // Get rating statistics
+  const [stats] = await db.query(`
+    SELECT 
+      COUNT(*) as TotalRatings,
+      ROUND(AVG(r.Score), 2) as AverageRating,
+      SUM(CASE WHEN r.Score = 5 THEN 1 ELSE 0 END) as Stars5,
+      SUM(CASE WHEN r.Score = 4 THEN 1 ELSE 0 END) as Stars4,
+      SUM(CASE WHEN r.Score = 3 THEN 1 ELSE 0 END) as Stars3,
+      SUM(CASE WHEN r.Score = 2 THEN 1 ELSE 0 END) as Stars2,
+      SUM(CASE WHEN r.Score = 1 THEN 1 ELSE 0 END) as Stars1
+    FROM RATINGS r
+    WHERE r.RatedUserID = ?
+  `, [riderID]);
+
+  // Get recent ratings
+  const [recentRatings] = await db.query(`
+    SELECT r.Score, r.Comment, r.Timestamp,
+           CONCAT(rater.FirstName, ' ', rater.LastName) AS RatedBy
+    FROM RATINGS r
+    JOIN USERS rater ON r.RatedBy = rater.UserID
+    WHERE r.RatedUserID = ?
+    ORDER BY r.Timestamp DESC
+    LIMIT 10
+  `, [riderID]);
+
+  const ratingData = {
+    riderID: riderID,
+    riderName: rider[0].RiderName,
+    totalRatings: stats[0].TotalRatings || 0,
+    averageRating: stats[0].AverageRating || 0,
+    ratingDistribution: {
+      "5stars": stats[0].Stars5 || 0,
+      "4stars": stats[0].Stars4 || 0,
+      "3stars": stats[0].Stars3 || 0,
+      "2stars": stats[0].Stars2 || 0,
+      "1stars": stats[0].Stars1 || 0
+    },
+    recentRatings: recentRatings
+  };
+
+  return sendSuccess(res, ratingData);
+});
+
 // GET /api/admin/notifications
 const getAdminNotifications = asyncHandler(async (req, res) => {
   const [lowRatedDrivers] = await db.query(`
     SELECT d.DriverID, CONCAT(u.FirstName,' ',u.LastName) AS DriverName,
-           COUNT(r.Score) AS TotalRatings, ROUND(AVG(r.Score),2) AS AvgRating
+           COUNT(*) AS TotalRatings, ROUND(AVG(r.Score),2) AS AvgRating
     FROM DRIVERS d JOIN USERS u ON d.UserID=u.UserID
     JOIN RATINGS r ON r.RatedUserID=u.UserID
     GROUP BY d.DriverID, u.FirstName, u.LastName
-    HAVING AVG(r.Score) < 3.0 AND COUNT(r.Score) >= 3
+    HAVING AVG(r.Score) < 3.0 AND COUNT(*) >= 3
     ORDER BY AvgRating ASC
   `);
   
@@ -505,7 +617,7 @@ const activeRides = asyncHandler(async (req, res) => {
 const lowRatedDrivers = asyncHandler(async (req, res) => {
   const [rows] = await db.query(`
     SELECT d.DriverID, CONCAT(u.FirstName,' ',u.LastName) AS DriverName,
-           u.AccountStatus, COUNT(r.Score) AS TotalRatings,
+           u.AccountStatus, COUNT(*) AS TotalRatings,
            ROUND(AVG(r.Score),2) AS AvgRating
     FROM DRIVERS d JOIN USERS u ON d.UserID=u.UserID
     JOIN RATINGS r ON r.RatedUserID=u.UserID
@@ -541,7 +653,7 @@ module.exports = {
   getAllPromoCodes, createPromoCode, updatePromoStatus,
   getAllComplaints, updateComplaint,
   getAllRides, updateRideStatus, cancelRide,
-  getAllRatings, deleteRating, getAdminNotifications,
+  getAllRatings, deleteRating, getDriverRatings, getRiderRatings, getAdminNotifications,
   applySurge, recalcFare, approvePayout,
   revenueByCity, driverEarnings, revenueByPayment,
   leaderboard, topDrivers, activeRides, lowRatedDrivers,

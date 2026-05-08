@@ -13,6 +13,7 @@ import { toast } from '../../components/ui/Toast';
 import { riderAPI } from '../../lib/rider';
 import { fadeSlideUp } from '../../motion/presets';
 import { NotificationCenter } from '../../components/rider/NotificationCenter';
+import { RatingModal } from '../../components/rider/RatingModal';
 
 export function RiderDashboard() {
   const [activeTab, setActiveTab] = useState('book');
@@ -439,7 +440,7 @@ function BookTab() {
                   </div>
                   <div className="flex gap-4 justify-center">
                     <Button variant="glass" onClick={() => riderAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>
-                    <Button variant="glass" className="text-error border-error/30 hover:border-error" onClick={handleCancel}>Cancel Request</Button>
+                    <Button variant="glass" className="text-error border-error/30 hover:border-error" onClick={() => handleCancel()}>Cancel Request</Button>
                   </div>
                 </GlassCard>
               ) : rideState.RideStatus === 'Accepted' ? (
@@ -507,8 +508,6 @@ function TripsTab() {
   const [selectedRide, setSelectedRide] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
-  const [rating, setRating] = useState(5);
-  const [ratingComment, setRatingComment] = useState('');
 
   useEffect(() => {
     riderAPI.getRideHistory().then(res => {
@@ -536,20 +535,13 @@ function TripsTab() {
     }
   };
 
-  const handleRating = async () => {
+  const handleRating = async (ratingData: { score: number; comment?: string }) => {
     if (!selectedRide) return;
     try {
-      await riderAPI.rateDriver({
-        rideID: selectedRide.RideID,
-        driverUserID: selectedRide.DriverUserID,
-        score: rating,
-        comment: ratingComment
-      });
+      await riderAPI.rateRide(selectedRide.RideID, ratingData);
       toast.success('Rating submitted successfully');
       setShowRatingModal(false);
       setSelectedRide(null);
-      setRating(5);
-      setRatingComment('');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Rating failed');
     }
@@ -636,36 +628,13 @@ function TripsTab() {
 
       {/* Rating Modal */}
       {showRatingModal && selectedRide && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <GlassCard tier={3} className="p-6 max-w-md w-full">
-            <h3 className="text-xl font-display mb-4">Rate Your Driver</h3>
-            <div className="text-center mb-4">
-              <p className="text-sm text-text-muted mb-2">How was your ride with {selectedRide.DriverName}?</p>
-              <div className="flex justify-center gap-2 mb-4">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button
-                    key={star}
-                    onClick={() => setRating(star)}
-                    className={`text-2xl transition-colors ${star <= rating ? 'text-amber-500' : 'text-glass-border'}`}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
-              <textarea
-                className="w-full bg-glass-bg border border-glass-border rounded-radius-md px-3 py-2 text-white outline-none resize-none"
-                placeholder="Share your experience (optional)"
-                rows={3}
-                value={ratingComment}
-                onChange={(e) => setRatingComment(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-3">
-              <Button variant="glass" className="flex-1" onClick={() => setShowRatingModal(false)}>Cancel</Button>
-              <Button className="flex-1" onClick={handleRating}>Submit Rating</Button>
-            </div>
-          </GlassCard>
-        </div>
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          rideId={selectedRide.RideID}
+          driverName={selectedRide.DriverName || 'Driver'}
+          onSubmit={handleRating}
+        />
       )}
     </div>
   );

@@ -191,5 +191,55 @@ CREATE EVENT evt_ExpirePromoCodes
          WHERE ValidTo < CURDATE()
            AND Status = 'Active';
 
-SELECT 'Phase 4 — Triggers created: 6 triggers + 1 Event Scheduler.' AS Status;
+-- ─────────────────────────────────────────────────────────────
+-- TRIGGER 7: Notify admin when driver is auto-flagged
+--   Creates notification for admin review when driver
+--   average rating drops below 3.5
+-- ─────────────────────────────────────────────────────────────
+DROP TRIGGER IF EXISTS trg_NotifyAdminLowRatedDriver$$
+CREATE TRIGGER trg_NotifyAdminLowRatedDriver
+AFTER INSERT ON RATINGS
+FOR EACH ROW
+BEGIN
+    DECLARE v_role        VARCHAR(20);
+    DECLARE v_avg_score   DECIMAL(5,2);
+    DECLARE v_driver_id   INT;
+    DECLARE v_was_suspended BOOLEAN DEFAULT FALSE;
+
+    -- Check if rated user is a Driver
+    SELECT Role INTO v_role FROM USERS WHERE UserID = NEW.RatedUserID;
+
+    IF v_role = 'Driver' THEN
+        -- Calculate new average rating for this driver
+        SELECT AVG(Score), d.DriverID
+          INTO v_avg_score, v_driver_id
+          FROM RATINGS r
+          JOIN DRIVERS d ON d.UserID = r.RatedUserID
+         WHERE r.RatedUserID = NEW.RatedUserID;
+
+        -- Check if this rating caused suspension (avg < 3.5)
+        IF v_avg_score < 3.5 THEN
+            -- Check if driver was already suspended
+            SELECT AccountStatus = 'Suspended' INTO v_was_suspended
+            FROM USERS 
+            WHERE UserID = NEW.RatedUserID;
+            
+            -- Only notify if this is a new suspension
+            IF NOT v_was_suspended THEN
+                -- Create admin notification
+                INSERT INTO NOTIFICATIONS (UserID, Title, Message, NotificationType, RelatedID)
+                SELECT u.UserID, 
+                       'Driver Auto-Flagged',
+                       CONCAT('Driver #', v_driver_id, ' has been auto-suspended due to low average rating (', ROUND(v_avg_score, 2), ').'),
+                       'System',
+                       v_driver_id
+                FROM USERS u WHERE u.Role = 'Admin';
+            END IF;
+        END IF;
+    END IF;
+END$$
+
+DELIMITER ;
+
+SELECT 'Phase 4 — Triggers created: 7 triggers + 1 Event Scheduler.' AS Status;
 

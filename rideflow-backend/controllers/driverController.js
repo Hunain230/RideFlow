@@ -534,7 +534,50 @@ const getMyPayments = asyncHandler(async (req, res) => {
 
 // ─── Ratings ──────────────────────────────────────────────────
 
-// POST /api/driver/ratings
+// POST /api/driver/rides/:id/rate
+const rateRide = asyncHandler(async (req, res) => {
+  const { score, comment } = req.body;
+  const rideID = req.params.id;
+  
+  if (!score) {
+    return sendError(res, 'score is required.');
+  }
+  if (score < 1 || score > 5) return sendError(res, 'Rating score must be between 1 and 5.', 400);
+
+  // Get driver info and verify ride
+  const [[driver]] = await db.query(
+    'SELECT DriverID FROM DRIVERS WHERE UserID = ?', [req.user.userID]);
+  const [[ride]] = await db.query(
+    `SELECT RideID, CustomerID AS RiderUserID 
+     FROM RIDES 
+     WHERE RideID = ? AND DriverID = ? AND RideStatus = 'Completed'`,
+    [rideID, driver.DriverID]
+  );
+  if (!ride) return sendError(res, 'Can only rate completed rides.', 404);
+
+  // Check if already rated
+  const [[existingRating]] = await db.query(
+    'SELECT RideID FROM RATINGS WHERE RideID = ? AND RatedBy = ?',
+    [rideID, req.user.userID]
+  );
+  if (existingRating) return sendError(res, 'You have already rated this ride.', 409);
+
+  await db.query(
+    `INSERT INTO RATINGS (RideID, RatedBy, RatedUserID, Score, Comment)
+     VALUES (?, ?, ?, ?, ?)`,
+    [rideID, req.user.userID, ride.RiderUserID, score, comment || null]
+  );
+  
+  // Trigger trg_FlagLowRatedRider may fire here automatically
+  return sendSuccess(res, {
+    rideID: rideID,
+    score: score,
+    comment: comment || null,
+    timestamp: new Date()
+  }, 'Rating submitted', 201);
+});
+
+// POST /api/driver/ratings (legacy - deprecated)
 const rateRider = asyncHandler(async (req, res) => {
   const { rideID, riderUserID, score, comment } = req.body;
   if (!rideID || !riderUserID || !score) {
@@ -756,7 +799,7 @@ module.exports = {
   uploadProfilePhoto, uploadDocuments, requestVerification,
   getIncomingRides, createRideRequest, acceptRide, rejectRide, startRide, completeRide, getMyRides,
   getEarnings, getWallet, requestPayout, getMyPayments,
-  rateRider, getMyRatings,
+  rateRide, rateRider, getMyRatings,
   getNotifications, markNotificationRead,
   sendSOS, reportRider, shareTrip,
 };

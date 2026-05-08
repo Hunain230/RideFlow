@@ -525,7 +525,97 @@ const getMyPromoCodes = asyncHandler(async (req, res) => {
 
 // ─── Ratings ──────────────────────────────────────────────────
 
-// POST /api/rider/ratings
+// POST /api/rider/rides/:id/rate
+const rateRide = asyncHandler(async (req, res) => {
+  const { score, comment } = req.body;
+  const rideID = req.params.id;
+  
+  if (!score) {
+    return sendError(res, 'score is required.');
+  }
+  if (score < 1 || score > 5) return sendError(res, 'Rating score must be between 1 and 5.', 400);
+
+  // Verify ride completed & belongs to this rider, and get driver info
+  const [[ride]] = await db.query(
+    `SELECT r.RideID, d.UserID AS DriverUserID 
+     FROM RIDES r 
+     JOIN DRIVERS d ON r.DriverID = d.DriverID 
+     WHERE r.RideID = ? AND r.CustomerID = ? AND r.RideStatus = 'Completed'`,
+    [rideID, req.user.userID]
+  );
+  if (!ride) return sendError(res, 'Can only rate completed rides.', 404);
+
+  // Check if already rated
+  const [[existingRating]] = await db.query(
+    'SELECT RideID FROM RATINGS WHERE RideID = ? AND RatedBy = ?',
+    [rideID, req.user.userID]
+  );
+  if (existingRating) return sendError(res, 'You have already rated this ride.', 409);
+
+  await db.query(
+    `INSERT INTO RATINGS (RideID, RatedBy, RatedUserID, Score, Comment)
+     VALUES (?, ?, ?, ?, ?)`,
+    [rideID, req.user.userID, ride.DriverUserID, score, comment || null]
+  );
+  
+  // Trigger trg_SuspendLowRatedDriver may fire here automatically
+  return sendSuccess(res, {
+    rideID: rideID,
+    score: score,
+    comment: comment || null,
+    timestamp: new Date()
+  }, 'Rating submitted', 201);
+});
+
+// GET /api/rider/leaderboard
+const getLeaderboard = asyncHandler(async (req, res) => {
+  const { city, minRides } = req.query;
+  
+  let sql = `
+    SELECT 
+      RANK() OVER (ORDER BY AVG(r.Score) DESC) as Rank,
+      CONCAT(u.FirstName, ' ', u.LastName) as DriverName,
+      ROUND(AVG(r.Score), 2) as AverageRating,
+      COUNT(r.RatingID) as TotalRatings,
+      COUNT(DISTINCT ri.RideID) as TotalRides,
+      v.VehicleType,
+      l.City
+    FROM DRIVERS d
+    JOIN USERS u ON d.UserID = u.UserID
+    LEFT JOIN RATINGS r ON r.RatedUserID = u.UserID
+    LEFT JOIN RIDES ri ON ri.DriverID = d.DriverID AND ri.RideStatus = 'Completed'
+    LEFT JOIN VEHICLES v ON v.DriverID = d.DriverID AND v.VerificationStatus = 'Verified'
+    LEFT JOIN LOCATIONS l ON d.CurrentLocationID = l.LocationID
+    WHERE d.VerificationStatus = 'Verified'
+  `;
+  
+  const params = [];
+  if (city) { 
+    sql += ' AND l.City = ?'; 
+    params.push(city); 
+  }
+  
+  sql += ' GROUP BY d.DriverID, u.FirstName, u.LastName, v.VehicleType, l.City';
+  
+  if (minRides) {
+    sql += ' HAVING COUNT(DISTINCT ri.RideID) >= ?';
+    params.push(parseInt(minRides));
+  } else {
+    sql += ' HAVING COUNT(r.RatingID) >= 10'; // Default minimum
+  }
+  
+  sql += ' ORDER BY AverageRating DESC LIMIT 50';
+  
+  const [rows] = await db.query(sql, params);
+  
+  return sendSuccess(res, {
+    city: city || 'All Cities',
+    minRides: minRides || 10,
+    topDrivers: rows
+  });
+});
+
+// POST /api/rider/ratings (legacy - deprecated)
 const rateDriver = asyncHandler(async (req, res) => {
   const { rideID, score, comment } = req.body;
   if (!rideID || !score) {
@@ -807,7 +897,8 @@ module.exports = {
   requestRide, getRideHistory, getRideDetail, cancelRide,
   makePayment, getPaymentHistory,
   getActivePromoCodes, applyPromo, getMyPromoCodes,
-  rateDriver,
+  rateRide, rateDriver,
+  getLeaderboard,
   fileComplaint, getMyComplaints,
   getSavedLocations, addSavedLocation, updateSavedLocation, deleteSavedLocation,
   triggerSOS, shareTrip, getEmergencyContacts, addEmergencyContact, deleteEmergencyContact,
