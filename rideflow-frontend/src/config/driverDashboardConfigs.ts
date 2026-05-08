@@ -1,15 +1,7 @@
 import type { DashboardConfig } from '../components/driver/DynamicDashboard';
 
 export const driverDashboardConfigs: Record<string, DashboardConfig[]> = {
-  overview: [
-    {
-      id: '1',
-      title: 'Total Rides',
-      type: 'stats',
-      dataSource: 'driver-rides',
-      refreshInterval: 10000, // 10 seconds for real-time updates
-    },
-  ],
+  overview: [],
   earnings: [
     {
       id: '1',
