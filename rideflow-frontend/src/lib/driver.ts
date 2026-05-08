@@ -16,7 +16,7 @@ export const driverAPI = {
   // Profile Enhancements
   uploadProfilePhoto: (photoData: any) => api.post('/driver/profile/photo', photoData),
   uploadDocuments: (documents: any) => api.post('/driver/documents', documents),
-  requestVerification: () => api.post('/driver/verification/request'),
+  requestVerification: () => api.post('/driver/verification-request'),
 
   // Rides
   getIncomingRides: () => api.get('/driver/rides/incoming'),

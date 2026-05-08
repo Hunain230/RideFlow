@@ -105,7 +105,7 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Promo code usage limit reached.';
     END IF;
 
-    SELECT Fare, RiderID INTO v_fare, v_rider_id FROM RIDES WHERE RideID = p_RideID;
+    SELECT Fare, CustomerID INTO v_fare, v_rider_id FROM RIDES WHERE RideID = p_RideID;
 
     SET v_discount = v_fare * (v_disc_pct / 100.0);
     IF v_max_disc IS NOT NULL AND v_discount > v_max_disc THEN

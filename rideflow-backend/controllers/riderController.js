@@ -154,11 +154,26 @@ const requestRide = asyncHandler(async (req, res) => {
   const perKmRates = { 'Economy': 20, 'Business': 35, 'Bike': 15 };
   const baseFare = baseFares[vehicleType] || 100;
   const perKmRate = perKmRates[vehicleType] || 20;
-  const calculatedFare = baseFare + (distance * perKmRate);
+  const distanceFare = Math.round(distance * perKmRate * 100) / 100;
+  const subtotal = baseFare + distanceFare;
   
   // Apply surge pricing (1.0x - 2.5x)
   const surgeMultiplier = await calculateSurgeMultiplier(pickupLocationID, vehicleType);
-  const finalFare = Math.round(calculatedFare * surgeMultiplier * 100) / 100;
+  const surgeAmount = Math.round(subtotal * (surgeMultiplier - 1) * 100) / 100;
+  const finalFare = Math.round((subtotal + surgeAmount) * 100) / 100;
+  
+  // Fare breakdown for response
+  const fareBreakdown = {
+    baseFare: baseFare,
+    distanceFare: distanceFare,
+    distance: Math.round(distance * 100) / 100,
+    perKmRate: perKmRate,
+    subtotal: subtotal,
+    surgeMultiplier: surgeMultiplier,
+    surgeAmount: surgeAmount,
+    discount: 0,
+    total: finalFare
+  };
 
   const [result] = await db.query(
     `INSERT INTO RIDES (CustomerID, PickupLocationID, DropoffLocationID, RideStatus, 
@@ -231,7 +246,9 @@ const requestRide = asyncHandler(async (req, res) => {
     rideID: rideId, 
     fare: finalFare, 
     distance: distance,
-    surgeMultiplier: surgeMultiplier
+    surgeMultiplier: surgeMultiplier,
+    fareBreakdown: fareBreakdown,
+    estimatedDuration: Math.round(distance * 2) // Rough estimate: 2 min per km
   }, 'Ride requested', 201);
 });
 

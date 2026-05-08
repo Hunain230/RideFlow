@@ -22,7 +22,9 @@ export function ProfileEditModal({ isOpen, onClose, profile, onUpdate }: Profile
     email: profile.Email || '',
     password: '',
     confirmPassword: '',
-    profilePhoto: profile.ProfilePhoto || ''
+    profilePhoto: profile.ProfilePhoto || '',
+    licenseNumber: profile.LicenseNumber || '',
+    cnic: profile.CNIC || ''
   });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
@@ -95,8 +97,39 @@ export function ProfileEditModal({ isOpen, onClose, profile, onUpdate }: Profile
     }
   };
 
+  const handleDriverDetailsUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.licenseNumber || !formData.cnic) {
+      toast.error('License number and CNIC are required');
+      return;
+    }
+
+    // CNIC validation - format: 12345-1234567-1
+    const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
+    if (!cnicRegex.test(formData.cnic)) {
+      toast.error('CNIC must be in format: 12345-1234567-1');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await driverAPI.updateProfile({
+        licenseNumber: formData.licenseNumber,
+        cnic: formData.cnic
+      });
+      toast.success('Driver details updated successfully');
+      onUpdate();
+      onClose();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update driver details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const tabs = [
     { id: 'basic', label: 'Basic Info', icon: <User size={16} /> },
+    { id: 'driver', label: 'Driver Details', icon: <AlertCircle size={16} /> },
     { id: 'security', label: 'Security', icon: <Lock size={16} /> },
     { id: 'photo', label: 'Profile Photo', icon: <Camera size={16} /> }
   ];
@@ -173,6 +206,58 @@ export function ProfileEditModal({ isOpen, onClose, profile, onUpdate }: Profile
                   <Button variant="glass" onClick={onClose}>Cancel</Button>
                   <Button type="submit" loading={loading}>
                     Update Basic Info
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {activeTab === 'driver' && (
+            <motion.div
+              key="driver"
+              variants={fadeSlideUp}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <form onSubmit={handleDriverDetailsUpdate} className="space-y-4">
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle size={20} className="text-amber-500 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="text-amber-500 font-medium mb-1">Driver Verification</p>
+                      <p className="text-text-muted">
+                        Your license number and CNIC are required for verification. These details will be reviewed by our admin team.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <FormInput
+                  label="License Number"
+                  value={formData.licenseNumber}
+                  onChange={(e) => handleInputChange('licenseNumber', e)}
+                  placeholder="e.g., DL-2023-001"
+                  required
+                />
+
+                <div className="relative">
+                  <FormInput
+                    label="CNIC"
+                    value={formData.cnic}
+                    onChange={(e) => handleInputChange('cnic', e)}
+                    placeholder="12345-1234567-1"
+                    required
+                  />
+                  <div className="absolute -bottom-6 left-0 text-xs text-text-muted">
+                    Format: 12345-1234567-1 (13 digits with dashes)
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-8">
+                  <Button variant="glass" onClick={onClose}>Cancel</Button>
+                  <Button type="submit" loading={loading}>
+                    Update Driver Details
                   </Button>
                 </div>
               </form>

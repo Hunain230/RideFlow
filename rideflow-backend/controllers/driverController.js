@@ -26,18 +26,42 @@ const getProfile = asyncHandler(async (req, res) => {
 
 // PATCH /api/driver/profile
 const updateProfile = asyncHandler(async (req, res) => {
-  const { firstName, lastName, password } = req.body;
-  const fields = []; const values = [];
-  if (firstName) { fields.push('FirstName = ?'); values.push(firstName); }
-  if (lastName)  { fields.push('LastName = ?');  values.push(lastName); }
+  const { firstName, lastName, password, licenseNumber, cnic, profilePhoto } = req.body;
+
+  // Update USERS table fields
+  const userFields = [];
+  const userValues = [];
+  if (firstName) { userFields.push('FirstName = ?'); userValues.push(firstName); }
+  if (lastName)  { userFields.push('LastName = ?');  userValues.push(lastName); }
   if (password) {
     const bcrypt = require('bcryptjs');
     const hash = await bcrypt.hash(password, 12);
-    fields.push('Password = ?'); values.push(hash);
+    userFields.push('Password = ?'); userValues.push(hash);
   }
-  if (!fields.length) return sendError(res, 'Nothing to update.');
-  values.push(req.user.userID);
-  await db.query(`UPDATE USERS SET ${fields.join(', ')} WHERE UserID = ?`, values);
+
+  // Update DRIVERS table fields
+  const driverFields = [];
+  const driverValues = [];
+  if (licenseNumber) { driverFields.push('LicenseNumber = ?'); driverValues.push(licenseNumber); }
+  if (cnic) { driverFields.push('CNIC = ?'); driverValues.push(cnic); }
+  if (profilePhoto) { driverFields.push('ProfilePhoto = ?'); driverValues.push(profilePhoto); }
+
+  if (!userFields.length && !driverFields.length) {
+    return sendError(res, 'Nothing to update.');
+  }
+
+  // Execute USERS table update
+  if (userFields.length) {
+    userValues.push(req.user.userID);
+    await db.query(`UPDATE USERS SET ${userFields.join(', ')} WHERE UserID = ?`, userValues);
+  }
+
+  // Execute DRIVERS table update
+  if (driverFields.length) {
+    driverValues.push(req.user.userID);
+    await db.query(`UPDATE DRIVERS SET ${driverFields.join(', ')} WHERE UserID = ?`, driverValues);
+  }
+
   return sendSuccess(res, null, 'Profile updated');
 });
 
@@ -570,11 +594,17 @@ const uploadDocuments = asyncHandler(async (req, res) => {
   if (!documentType || !documentUrl) {
     return sendError(res, 'Document type and URL are required.');
   }
-  
+
+  // Validate documentType against schema enum
+  const validDocumentTypes = ['License', 'CNIC', 'VehicleRegistration', 'Insurance'];
+  if (!validDocumentTypes.includes(documentType)) {
+    return sendError(res, `Document type must be one of: ${validDocumentTypes.join(', ')}`);
+  }
+
   const [[driver]] = await db.query(
     'SELECT DriverID FROM DRIVERS WHERE UserID = ?', [req.user.userID]);
-  
-  // Insert into DRIVER_DOCUMENTS table (would need to be created)
+
+  // Insert into DRIVER_DOCUMENTS table
   const [result] = await db.query(
     'INSERT INTO DRIVER_DOCUMENTS (DriverID, DocumentType, DocumentUrl, Status) VALUES (?, ?, ?, "Pending")',
     [driver.DriverID, documentType, documentUrl]
@@ -585,27 +615,34 @@ const uploadDocuments = asyncHandler(async (req, res) => {
 // POST /api/driver/verification-request
 const requestVerification = asyncHandler(async (req, res) => {
   const [[driver]] = await db.query(
-    'SELECT DriverID, VerificationStatus FROM DRIVERS WHERE UserID = ?', [req.user.userID]);
-  
+    'SELECT DriverID, VerificationStatus, UserID FROM DRIVERS WHERE UserID = ?', [req.user.userID]);
+
   if (driver.VerificationStatus === 'Verified') {
     return sendError(res, 'Driver is already verified.', 400);
   }
-  
-  // Check if required documents are uploaded
+
+  // Check if required documents are uploaded (at least License and CNIC)
   const [[docCount]] = await db.query(
-    'SELECT COUNT(*) as count FROM DRIVER_DOCUMENTS WHERE DriverID = ? AND Status = "Pending"',
+    `SELECT COUNT(*) as count FROM DRIVER_DOCUMENTS
+     WHERE DriverID = ? AND DocumentType IN ('License', 'CNIC')`,
     [driver.DriverID]
   );
-  
+
   if (docCount.count < 2) {
-    return sendError(res, 'Please upload required documents before requesting verification.', 400);
+    return sendError(res, 'Please upload License and CNIC documents before requesting verification.', 400);
   }
-  
+
+  // Create notification for admin about verification request
   await db.query(
-    'UPDATE DRIVERS SET VerificationStatus = "Pending Review" WHERE DriverID = ?',
-    [driver.DriverID]
+    `INSERT INTO NOTIFICATIONS (UserID, Title, Message, NotificationType, RelatedID)
+     SELECT u.UserID, 'Driver Verification Request',
+            CONCAT('Driver #', ?, ' has submitted documents for verification'),
+            'Verification', ?
+     FROM USERS u WHERE u.Role = 'Admin'`,
+    [driver.DriverID, driver.DriverID]
   );
-  return sendSuccess(res, null, 'Verification request submitted');
+
+  return sendSuccess(res, null, 'Verification request submitted. Admin will review your documents.');
 });
 
 // ─── Notifications ───────────────────────────────────────────────
