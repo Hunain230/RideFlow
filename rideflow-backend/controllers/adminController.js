@@ -626,6 +626,114 @@ const lowRatedDrivers = asyncHandler(async (req, res) => {
   return sendSuccess(res, rows);
 });
 
+// ─── Revenue Analytics ─────────────────────────────────────
+
+// GET /api/admin/revenue/overview
+const getRevenueOverview = asyncHandler(async (req, res) => {
+  const { from, to } = req.query;
+  
+  let dateFilter = '';
+  const params = [];
+  if (from && to) {
+    dateFilter = 'AND p.TransactionDate BETWEEN ? AND ?';
+    params.push(from, to);
+  }
+  
+  // Total revenue from all completed rides
+  const [totalRevenue] = await db.query(`
+    SELECT 
+      SUM(p.Amount) AS TotalRevenue,
+      COUNT(p.PaymentID) AS TotalTransactions,
+      SUM(p.DiscountApplied) AS TotalDiscounts,
+      SUM(p.Amount - p.DiscountApplied) AS NetRevenue,
+      AVG(p.Amount) AS AverageTransaction,
+      MIN(p.TransactionDate) AS FirstTransaction,
+      MAX(p.TransactionDate) AS LastTransaction
+    FROM PAYMENTS p 
+    WHERE p.PaymentStatus = 'Paid' ${dateFilter}
+  `, params);
+  
+  // Revenue by payment method
+  const [revenueByMethod] = await db.query(`
+    SELECT 
+      p.PaymentMethod,
+      COUNT(p.PaymentID) AS TransactionCount,
+      SUM(p.Amount) AS Revenue,
+      ROUND(SUM(p.Amount) * 100.0 / (SELECT SUM(Amount) FROM PAYMENTS WHERE PaymentStatus = 'Paid' ${dateFilter}), 2) AS Percentage
+    FROM PAYMENTS p 
+    WHERE p.PaymentStatus = 'Paid' ${dateFilter}
+    GROUP BY p.PaymentMethod
+    ORDER BY Revenue DESC
+  `, params);
+  
+  // Revenue by month (last 12 months)
+  const [monthlyRevenue] = await db.query(`
+    SELECT 
+      DATE_FORMAT(p.TransactionDate, '%Y-%m') AS Month,
+      DATE_FORMAT(p.TransactionDate, '%M %Y') AS MonthLabel,
+      COUNT(p.PaymentID) AS Transactions,
+      SUM(p.Amount) AS Revenue,
+      SUM(p.DiscountApplied) AS Discounts
+    FROM PAYMENTS p 
+    WHERE p.PaymentStatus = 'Paid' 
+      AND p.TransactionDate >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+      ${dateFilter}
+    GROUP BY DATE_FORMAT(p.TransactionDate, '%Y-%m'), DATE_FORMAT(p.TransactionDate, '%M %Y')
+    ORDER BY Month DESC
+  `, params);
+  
+  // Top spending customers
+  const [topCustomers] = await db.query(`
+    SELECT 
+      u.UserID,
+      CONCAT(u.FirstName, ' ', u.LastName) AS CustomerName,
+      u.Email,
+      COUNT(p.PaymentID) AS TransactionCount,
+      SUM(p.Amount) AS TotalSpent,
+      AVG(p.Amount) AS AverageSpent,
+      MAX(p.TransactionDate) AS LastTransaction
+    FROM PAYMENTS p 
+    JOIN USERS u ON p.CustomerID = u.UserID
+    WHERE p.PaymentStatus = 'Paid' ${dateFilter}
+    GROUP BY u.UserID, u.FirstName, u.LastName, u.Email
+    ORDER BY TotalSpent DESC
+    LIMIT 10
+  `, params);
+  
+  // Daily revenue trend (last 30 days)
+  const [dailyRevenue] = await db.query(`
+    SELECT 
+      DATE(p.TransactionDate) AS Date,
+      DATE_FORMAT(p.TransactionDate, '%d %M') AS DateLabel,
+      COUNT(p.PaymentID) AS Transactions,
+      SUM(p.Amount) AS Revenue
+    FROM PAYMENTS p 
+    WHERE p.PaymentStatus = 'Paid' 
+      AND p.TransactionDate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+      ${dateFilter}
+    GROUP BY DATE(p.TransactionDate), DATE_FORMAT(p.TransactionDate, '%d %M')
+    ORDER BY Date DESC
+  `, params);
+  
+  const revenueData = {
+    overview: totalRevenue[0] || {
+      TotalRevenue: 0,
+      TotalTransactions: 0,
+      TotalDiscounts: 0,
+      NetRevenue: 0,
+      AverageTransaction: 0,
+      FirstTransaction: null,
+      LastTransaction: null
+    },
+    byPaymentMethod: revenueByMethod,
+    monthlyTrend: monthlyRevenue,
+    topCustomers,
+    dailyTrend: dailyRevenue
+  };
+  
+  return sendSuccess(res, revenueData);
+});
+
 // GET /api/admin/locations
 const getAllLocations = asyncHandler(async (req, res) => {
   const [rows] = await db.query('SELECT * FROM LOCATIONS ORDER BY City, LocationName');
@@ -657,5 +765,6 @@ module.exports = {
   applySurge, recalcFare, approvePayout,
   revenueByCity, driverEarnings, revenueByPayment,
   leaderboard, topDrivers, activeRides, lowRatedDrivers,
+  getRevenueOverview,
   getAllLocations, addLocation,
 };

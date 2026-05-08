@@ -57,6 +57,9 @@ router.post  ('/rides/:id/fare',            C.recalcFare);
 router.get   ('/locations',                 C.getAllLocations);
 router.post  ('/locations',                 C.addLocation);
 
+// ─── Revenue Analytics ───────────────────────────────────────
+router.get   ('/revenue/overview',           C.getRevenueOverview);
+
 // ─── Reports ──────────────────────────────────────────────────
 router.get   ('/reports/revenue-by-city',   C.revenueByCity);
 router.get   ('/reports/driver-earnings',   C.driverEarnings);

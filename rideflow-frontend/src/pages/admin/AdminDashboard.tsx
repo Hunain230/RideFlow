@@ -92,19 +92,20 @@ function OverviewTab() {
   const [stats, setStats] = useState({ revenue: 0, drivers: 0, rides: 0, complaints: 0 });
   const [activeRides, setActiveRides] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any>(null);
+  const [revenueOverview, setRevenueOverview] = useState<any>(null);
 
   useEffect(() => {
     const fetchOverview = async () => {
       try {
-        const [revRes, ridesRes, userRes, complRes] = await Promise.all([
-          adminAPI.revenueByCity(),
+        const [revenueOverviewRes, ridesRes, userRes, complRes] = await Promise.all([
+          adminAPI.getRevenueOverview(),
           adminAPI.activeRides(),
           adminAPI.getDrivers(),
           adminAPI.getComplaints('Open')
         ]);
         
-        const rev = revRes.data.data;
-        const totalRevenue = rev.reduce((acc: number, cur: any) => acc + Number(cur.NetRevenue_PKR || 0), 0);
+        const revenueData = revenueOverviewRes.data;
+        const totalRevenue = revenueData.overview.TotalRevenue;
         
         const drivers = userRes.data.data;
         const activeDriversCount = drivers.filter((d: any) => d.AvailabilityStatus === 'Online').length;
@@ -117,13 +118,14 @@ function OverviewTab() {
         });
 
         setActiveRides(ridesRes.data.data);
+        setRevenueOverview(revenueData);
 
-        // Chart mapping (simplified using cities as labels instead of days for demo)
+        // Chart mapping using monthly revenue trend
         setChartData({
-          labels: rev.map((r: any) => r.City),
+          labels: revenueData.monthlyTrend.map((m: any) => m.MonthLabel),
           datasets: [{
-            label: 'Net Revenue (PKR)',
-            data: rev.map((r: any) => Number(r.NetRevenue_PKR || 0)),
+            label: 'Monthly Revenue (PKR)',
+            data: revenueData.monthlyTrend.map((m: any) => m.Revenue),
             borderColor: '#D97706',
             backgroundColor: 'rgba(217, 119, 6, 0.1)',
             tension: 0.4,
@@ -188,9 +190,11 @@ function OverviewTab() {
                 transition={{ duration: 2, repeat: Infinity }}
               />
             </div>
-            <h3 className="text-sm font-medium text-text-secondary mb-1">Total Revenue</h3>
+            <h3 className="text-sm font-medium text-text-secondary mb-1">Total Customer Spending</h3>
             <p className="text-2xl font-bold text-text-primary">PKR {stats.revenue.toLocaleString()}</p>
-            <div className="mt-2 text-xs text-amber-600 font-medium">+12% from last month</div>
+            <div className="mt-2 text-xs text-amber-600 font-medium">
+              {revenueOverview ? `${revenueOverview.overview.TotalTransactions} transactions` : 'Loading...'}
+            </div>
           </GlassCard>
         </motion.div>
 
@@ -342,6 +346,107 @@ function OverviewTab() {
           </GlassCard>
         </motion.div>
       </div>
+
+      {/* Revenue Insights Section */}
+      {revenueOverview && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <GlassCard tier={1} className="p-8 backdrop-blur-xl bg-glass-white-strong border-glass-border hover:border-soft-gold/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-display text-text-primary font-bold">Revenue Breakdown</h3>
+              <div className="flex items-center gap-2">
+                <motion.div 
+                  className="w-2 h-2 bg-amber-600 rounded-full"
+                  animate={{ scale: [1, 1.5, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <span className="text-sm text-text-secondary">Payment Methods</span>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {revenueOverview.byPaymentMethod?.map((method: any, index: number) => (
+                <motion.div
+                  key={method.PaymentMethod}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="p-4 backdrop-blur-xl bg-glass-white border border-glass-border rounded-xl hover:border-soft-gold/30 transition-all duration-300"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-semibold text-text-primary">{method.PaymentMethod}</h4>
+                      <p className="text-sm text-text-secondary">{method.TransactionCount} transactions</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-amber-600 font-bold text-lg">PKR {method.Revenue.toLocaleString()}</div>
+                      <div className="text-sm text-admin-success">{method.Percentage}%</div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </GlassCard>
+
+          <GlassCard tier={1} className="p-8 backdrop-blur-xl bg-glass-white-strong border-glass-border hover:border-soft-gold/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-display text-text-primary font-bold">Top Customers</h3>
+              <div className="flex items-center gap-2">
+                <motion.div 
+                  className="w-2 h-2 bg-admin-cyan rounded-full animate-pulse shadow-glow"
+                  animate={{ scale: [1, 1.5, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                />
+                <span className="text-sm text-text-secondary">By Spending</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {revenueOverview.topCustomers?.slice(0, 5).map((customer: any, index: number) => (
+                <motion.div
+                  key={customer.UserID}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="p-3 backdrop-blur-xl bg-glass-white border border-glass-border rounded-xl hover:border-soft-gold/30 transition-all duration-300"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="font-semibold text-text-primary text-sm">#{index + 1}</span>
+                      <span className="ml-2 font-medium text-text-primary">{customer.CustomerName}</span>
+                    </div>
+                    <div className="text-amber-600 font-bold text-sm">PKR {customer.TotalSpent.toLocaleString()}</div>
+                  </div>
+                  <div className="text-text-secondary text-xs mt-1">
+                    {customer.TransactionCount} transactions • Avg: PKR {customer.AverageSpent.toLocaleString()}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </GlassCard>
+
+          <GlassCard tier={1} className="p-8 backdrop-blur-xl bg-glass-white-strong border-glass-border hover:border-soft-gold/30 transition-all duration-300">
+            <h3 className="text-2xl font-display text-text-primary font-bold mb-6">Revenue Insights</h3>
+            <div className="space-y-4">
+              <div className="p-4 backdrop-blur-xl bg-glass-white border border-glass-border rounded-xl">
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Net Revenue:</span>
+                  <span className="font-semibold text-admin-cyan">PKR {revenueOverview.overview.NetRevenue.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="p-4 backdrop-blur-xl bg-glass-white border border-glass-border rounded-xl">
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Total Discounts:</span>
+                  <span className="font-semibold text-admin-warning">PKR {revenueOverview.overview.TotalDiscounts.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="p-4 backdrop-blur-xl bg-glass-white border border-glass-border rounded-xl">
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Average Transaction:</span>
+                  <span className="font-semibold text-amber-600">PKR {revenueOverview.overview.AverageTransaction.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
     </div>
   );
 }

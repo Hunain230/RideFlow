@@ -40,6 +40,9 @@ export const adminAPI = {
   // Locations
   getLocations:       () => api.get('/admin/locations'),
   addLocation:        (data: object) => api.post('/admin/locations', data),
+  // Revenue Analytics
+  getRevenueOverview: (from?: string, to?: string) => api.get('/admin/revenue/overview', { params: { from, to } }),
+
   // Reports
   revenueByCity:      (from?: string, to?: string) => api.get('/admin/reports/revenue-by-city', { params: { from, to } }),
   driverEarnings:     () => api.get('/admin/reports/driver-earnings'),
