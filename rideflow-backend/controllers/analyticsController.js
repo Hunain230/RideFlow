@@ -11,6 +11,10 @@ const getEarningsOverview = asyncHandler(async (req, res) => {
   const [[driver]] = await db.query(
     'SELECT DriverID FROM DRIVERS WHERE UserID = ?', [req.user.userID]);
   
+  if (!driver) {
+    return sendError(res, 'Driver record not found', 404);
+  }
+  
   // Get comprehensive earnings overview
   const [overview] = await db.query(`
     SELECT 
