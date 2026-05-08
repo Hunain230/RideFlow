@@ -25,6 +25,17 @@ const register = asyncHandler(async (req, res) => {
     return sendError(res, 'Role must be Rider or Driver. Admins are created manually.');
   }
 
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return sendError(res, 'Invalid email format.', 400);
+  }
+
+  // Validate password strength (min 6 chars)
+  if (password.length < 6) {
+    return sendError(res, 'Password must be at least 6 characters long.', 400);
+  }
+
   // Check duplicate email
   const [existing] = await db.query('SELECT UserID FROM USERS WHERE Email = ?', [email]);
   if (existing.length) return sendError(res, 'Email already registered.', 409);
@@ -97,6 +108,12 @@ const register = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return sendError(res, 'Email and password required.');
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return sendError(res, 'Invalid email format.', 400);
+  }
 
   const [rows] = await db.query(
     'SELECT UserID, FirstName, LastName, Email, Password, Role, AccountStatus FROM USERS WHERE Email = ?',

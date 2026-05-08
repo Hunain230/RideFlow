@@ -283,7 +283,26 @@ CREATE TABLE IF NOT EXISTS SOS_ALERTS (
 );
 
 -- ─────────────────────────────────────────────────────────────
--- 17. RIDE_TIMELINE
+-- 17. SAFETY_ALERTS
+--    Rider safety alerts (SOS, trip sharing)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS SAFETY_ALERTS (
+    AlertID         INT            AUTO_INCREMENT PRIMARY KEY,
+    UserID          INT            NOT NULL,  -- Rider who triggered the alert
+    RideID          INT            NULL,
+    AlertType       ENUM('SOS', 'ShareTrip', 'Emergency') NOT NULL,
+    AlertData       JSON           NULL,      -- Additional data (location, contacts, etc.)
+    LocationLat     DECIMAL(10,8)  NULL,
+    LocationLng     DECIMAL(11,8)  NULL,
+    Resolved        BOOLEAN        DEFAULT FALSE,
+    ResolvedAt      TIMESTAMP      NULL,
+    CreatedAt       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserID) REFERENCES USERS(UserID) ON DELETE CASCADE,
+    FOREIGN KEY (RideID) REFERENCES RIDES(RideID) ON DELETE SET NULL
+);
+
+-- ─────────────────────────────────────────────────────────────
+-- 18. RIDE_TIMELINE
 --    Detailed timeline of ride events
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS RIDE_TIMELINE (
@@ -300,7 +319,7 @@ CREATE TABLE IF NOT EXISTS RIDE_TIMELINE (
 );
 
 -- ─────────────────────────────────────────────────────────────
--- 18. NOTIFICATIONS
+-- 19. NOTIFICATIONS
 --    System notifications for all user types
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS NOTIFICATIONS (
@@ -354,6 +373,11 @@ CREATE INDEX idx_driver_documents_status ON DRIVER_DOCUMENTS(Status);
 CREATE INDEX idx_sos_alerts_driver_id ON SOS_ALERTS(DriverID);
 CREATE INDEX idx_sos_alerts_status ON SOS_ALERTS(Status);
 CREATE INDEX idx_sos_alerts_alert_time ON SOS_ALERTS(AlertTime);
+
+-- Safety Alerts indexes
+CREATE INDEX idx_safety_alerts_user_id ON SAFETY_ALERTS(UserID);
+CREATE INDEX idx_safety_alerts_resolved ON SAFETY_ALERTS(Resolved);
+CREATE INDEX idx_safety_alerts_created_at ON SAFETY_ALERTS(CreatedAt);
 
 -- Ride Timeline indexes
 CREATE INDEX idx_ride_timeline_ride_id ON RIDE_TIMELINE(RideID);
@@ -502,4 +526,4 @@ DELIMITER ;
 -- Re-enable FK checks
 SET FOREIGN_KEY_CHECKS = 1;
 
-SELECT 'Phase 2 — Schema created: 18 tables with indexes and triggers.' AS Status;
+SELECT 'Phase 2 — Schema created: 19 tables with indexes and triggers.' AS Status;

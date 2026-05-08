@@ -18,7 +18,12 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
+interface SignInFormProps {
+  onSuccess: () => void;
+  onSwitchMode?: () => void;
+}
+
+export function SignInForm({ onSuccess, onSwitchMode }: SignInFormProps) {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -182,9 +187,9 @@ export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
       >
         <p className="text-sm text-text-muted">
           Don't have an account?{' '}
-          <button 
+          <button
             type="button"
-            onClick={() => {/* This would switch to signup mode */}}
+            onClick={() => onSwitchMode?.()}
             className="text-amber-400 hover:text-amber-300 transition-colors font-medium"
           >
             Sign up

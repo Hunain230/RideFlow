@@ -33,7 +33,18 @@ const createUser = asyncHandler(async (req, res) => {
   if (!['Rider', 'Driver', 'Admin'].includes(role)) {
     return sendError(res, 'Role must be Rider, Driver, or Admin.');
   }
-  
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return sendError(res, 'Invalid email format.', 400);
+  }
+
+  // Validate password strength
+  if (password.length < 6) {
+    return sendError(res, 'Password must be at least 6 characters long.', 400);
+  }
+
   // Check if email exists
   const [existing] = await db.query('SELECT UserID FROM USERS WHERE Email = ?', [email]);
   if (existing.length > 0) {
@@ -66,26 +77,41 @@ const updateUser = asyncHandler(async (req, res) => {
   if (!['Rider', 'Driver', 'Admin'].includes(role)) {
     return sendError(res, 'Role must be Rider, Driver, or Admin.');
   }
-  
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return sendError(res, 'Invalid email format.', 400);
+  }
+
   await db.query(
     'UPDATE USERS SET FirstName = ?, LastName = ?, Email = ?, Role = ? WHERE UserID = ?',
     [firstName, lastName, email, role, req.params.id]
   );
-  
+
   return sendSuccess(res, null, 'User updated');
 });
 
 // DELETE /api/admin/users/:id
 const deleteUser = asyncHandler(async (req, res) => {
-  // Check if user has associated data
-  const [rides] = await db.query('SELECT COUNT(*) AS count FROM RIDES WHERE CustomerID = ? OR DriverID = ?', [req.params.id, req.params.id]);
-  const [driver] = await db.query('SELECT DriverID FROM DRIVERS WHERE UserID = ?', [req.params.id]);
-  
-  if (rides[0].count > 0) {
+  const userId = req.params.id;
+
+  // Check if user has rides as a customer
+  const [customerRides] = await db.query('SELECT COUNT(*) AS count FROM RIDES WHERE CustomerID = ?', [userId]);
+
+  // Check if user is a driver and has rides
+  const [driverRows] = await db.query('SELECT DriverID FROM DRIVERS WHERE UserID = ?', [userId]);
+  let driverRidesCount = 0;
+  if (driverRows.length > 0) {
+    const [driverRides] = await db.query('SELECT COUNT(*) AS count FROM RIDES WHERE DriverID = ?', [driverRows[0].DriverID]);
+    driverRidesCount = driverRides[0].count;
+  }
+
+  if (customerRides[0].count > 0 || driverRidesCount > 0) {
     return sendError(res, 'Cannot delete user with associated rides. Suspend instead.');
   }
-  
-  await db.query('DELETE FROM USERS WHERE UserID = ?', [req.params.id]);
+
+  await db.query('DELETE FROM USERS WHERE UserID = ?', [userId]);
   return sendSuccess(res, null, 'User deleted');
 });
 

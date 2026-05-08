@@ -154,14 +154,14 @@ const getPerformanceMetrics = asyncHandler(async (req, res) => {
     FROM RIDES r
     JOIN DRIVERS d ON r.DriverID = d.DriverID
     LEFT JOIN (
-      SELECT 
+      SELECT
         RatedUserID,
         AVG(Score) as AverageRating,
         COUNT(*) as RatingCount,
         COUNT(DISTINCT RatedBy) as UniqueRaters
-      FROM RATINGS 
+      FROM RATINGS
       GROUP BY RatedUserID
-    ) rating ON r.DriverID = rating.RatedUserID
+    ) rating ON d.UserID = rating.RatedUserID
     WHERE r.DriverID = ?
   `, [driver.DriverID]);
 
@@ -194,7 +194,7 @@ const getPerformanceTrends = asyncHandler(async (req, res) => {
   }
   
   const [trends] = await db.query(`
-    SELECT 
+    SELECT
       ${groupBy} as Period,
       COUNT(*) as TotalRides,
       SUM(CASE WHEN r.RideStatus = 'Completed' THEN 1 ELSE 0 END) as CompletedRides,
@@ -206,8 +206,8 @@ const getPerformanceTrends = asyncHandler(async (req, res) => {
       AVG(rating.Score) as AverageRating
     FROM RIDES r
     JOIN DRIVERS d ON r.DriverID = d.DriverID
-    LEFT JOIN RATINGS rating ON r.RideID = rating.RideID
-    WHERE r.DriverID = ? 
+    LEFT JOIN RATINGS rating ON r.RideID = rating.RideID AND rating.RatedUserID = d.UserID
+    WHERE r.DriverID = ?
       AND r.StartTime >= DATE_SUB(CURDATE(), ${interval})
     GROUP BY Period
     ORDER BY Period ASC
@@ -412,7 +412,7 @@ const exportAnalytics = asyncHandler(async (req, res) => {
     case 'performance':
       // Get performance metrics
       const [performanceData] = await db.query(`
-        SELECT 
+        SELECT
           r.RideID,
           DATE(r.StartTime) as Date,
           r.RideStatus,
@@ -421,8 +421,9 @@ const exportAnalytics = asyncHandler(async (req, res) => {
           TIMESTAMPDIFF(MINUTE, r.StartTime, IFNULL(r.EndTime, NOW())) as DurationMinutes,
           rating.Score as Rating
         FROM RIDES r
-        LEFT JOIN RATINGS rating ON r.RideID = rating.RideID
-        WHERE r.DriverID = ? 
+        LEFT JOIN DRIVERS d ON r.DriverID = d.DriverID
+        LEFT JOIN RATINGS rating ON r.RideID = rating.RideID AND rating.RatedUserID = d.UserID
+        WHERE r.DriverID = ?
           AND r.StartTime >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
         ORDER BY r.StartTime DESC
       `, [driver.DriverID]);

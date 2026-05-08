@@ -63,7 +63,7 @@ async function updateDriverLocation(driverId, latitude, longitude) {
 // Find active ride for driver
 async function findActiveRideByDriver(driverId) {
   const [rides] = await db.query(
-    'SELECT * FROM RIDES WHERE DriverID = ? AND RideStatus IN ("Accepted", "In Progress")',
+    'SELECT * FROM RIDES WHERE DriverID = ? AND RideStatus IN ("Accepted", "InProgress")',
     [driverId]
   );
   return rides[0] || null;
@@ -164,7 +164,7 @@ async function getRideTracking(req, res) {
 
     const ride = rides[0];
     const trackingData = activeRides.get(rideId);
-    const driverLocation = activeDrivers.get(ride.DriverId);
+    const driverLocation = activeDrivers.get(ride.DriverID);
 
     // Get pickup and dropoff locations
     const [pickupLocation] = await db.query(

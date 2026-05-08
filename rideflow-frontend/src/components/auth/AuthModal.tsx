@@ -54,33 +54,17 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
       if (mode === 'signin') {
         const res = await authAPI.login(formData.email, formData.password);
         if (res.data.success) {
-          console.log('=== AUTH SUCCESS ===');
-          console.log('Response data:', res.data.data);
           const userRole = res.data.data.user.role;
-          console.log('User role from backend:', userRole);
-          console.log('Token:', res.data.data.token.substring(0, 50) + '...');
-          
+
           // Set auth state
           setAuth(res.data.data.token, res.data.data.user);
-          console.log('Auth state set in store');
-          
-          // Check if auth was actually set
-          setTimeout(() => {
-            console.log('Checking auth state after set...');
-            const authState = useAuthStore.getState();
-            console.log('Token in store:', !!authState.token);
-            console.log('User in store:', authState.user);
-            console.log('User role in store:', authState.user?.role);
-          }, 100);
-          
+
           toast.success('Successfully signed in!');
           const role = userRole.toLowerCase();
-          console.log('Navigating to:', `/${role}`);
-          
+
           // Navigate
           navigate(`/${role}`);
-          console.log('Navigation called');
-          
+
           // Close modal after navigation starts
           setTimeout(() => onClose(), 100);
         }
@@ -101,26 +85,20 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
 
         const res = await authAPI.register(payload);
         if (res.data.success) {
-          console.log('Registration Success:', res.data.data);
           toast.success('Account created successfully!');
           setAuth(res.data.data.token, res.data.data.user);
-          console.log('Navigating to:', `/${role.toLowerCase()}`);
           navigate(`/${role.toLowerCase()}`);
           // Close modal after navigation starts
           setTimeout(() => onClose(), 100);
         }
       }
     } catch (err: any) {
-      console.log('=== AUTH ERROR ===');
-      console.log('Error:', err);
-      console.log('Response:', err.response?.data);
-      
       // Set error state to prevent modal from closing
       setHasError(true);
-      
+
       // Extract specific error message
       let errorMessage = `Failed to ${mode === 'signin' ? 'sign in' : 'register'}. Please try again.`;
-      
+
       if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (err.response?.status === 401) {
@@ -132,10 +110,9 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
       } else if (err.code === 'ERR_NETWORK') {
         errorMessage = 'Network error. Please check your connection and try again.';
       }
-      
-      console.log('Displaying error:', errorMessage);
+
       toast.error(errorMessage);
-      
+
       // Keep modal open on error - don't close it
       // Modal stays open so user can try again
     } finally {
