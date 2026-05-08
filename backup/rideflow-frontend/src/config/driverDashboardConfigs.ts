@@ -1,7 +1,36 @@
 import type { DashboardConfig } from '../components/driver/DynamicDashboard';
 
 export const driverDashboardConfigs: Record<string, DashboardConfig[]> = {
-  overview: [],
+  overview: [
+    {
+      id: '1',
+      title: 'Total Rides',
+      type: 'stats',
+      dataSource: 'earnings-overview',
+      refreshInterval: 30000,
+    },
+    {
+      id: '2',
+      title: 'Completed Rides',
+      type: 'stats',
+      dataSource: 'earnings-overview',
+      refreshInterval: 30000,
+    },
+    {
+      id: '3',
+      title: 'Net Earnings',
+      type: 'stats',
+      dataSource: 'earnings-overview',
+      refreshInterval: 30000,
+    },
+    {
+      id: '4',
+      title: 'Average Rating',
+      type: 'stats',
+      dataSource: 'performance-metrics',
+      refreshInterval: 30000,
+    },
+  ],
   earnings: [
     {
       id: '1',

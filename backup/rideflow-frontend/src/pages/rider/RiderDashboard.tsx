@@ -124,29 +124,13 @@ function BookTab() {
       interval = setInterval(async () => {
         try {
           const res = await riderAPI.getRideDetail(activeRideId);
-          const rideData = res.data.data;
-          setRideState(rideData);
-          
-          // Handle different ride status transitions
-          if (rideData.RideStatus === 'Accepted' && step !== 4) {
-            setStep(4); // Driver accepted
-          } else if (rideData.RideStatus === 'InProgress' && step !== 4) {
-            setStep(4); // Ride started
-          } else if (rideData.RideStatus === 'Completed') {
+          setRideState(res.data.data);
+          if (res.data.data.RideStatus === 'Completed' || res.data.data.RideStatus === 'Cancelled') {
             clearInterval(interval);
             setStep(5); // Completion step
-            toast.success('Ride completed successfully!');
-          } else if (rideData.RideStatus === 'Cancelled') {
-            clearInterval(interval);
-            setStep(1); // Back to booking
-            setActiveRideId(null);
-            setRideState(null);
-            toast.info('Ride was cancelled');
           }
-        } catch(e) {
-          console.error('Failed to fetch ride status:', e);
-        }
-      }, 2000); // More frequent updates for better UX
+        } catch(e) {}
+      }, 3000);
     }
     return () => clearInterval(interval);
   }, [step, activeRideId]);

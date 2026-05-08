@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Driver Auth Test</title>
+    <script>
+        // Set driver authentication data in localStorage
+        const driverAuth = {
+            token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOjIyLCJlbWFpbCI6InRlc3QuZHJpdmVyQHJpZGVmbG93LmNvbSIsInJvbGUiOiJEcml2ZXIiLCJpYXQiOjE3NzgyNTYxMTYsImV4cCI6MTc3ODM0MjUxNn0.f602MgfyVThikS4TyPFrIPuikQHOAechstS5CeKRaxk",
+            user: {
+                userID: 22,
+                firstName: "Test",
+                lastName: "Driver",
+                email: "test.driver@rideflow.com",
+                role: "Driver",
+                driverID: 7
+            }
+        };
+        
+        localStorage.setItem('rideflow-auth', JSON.stringify(driverAuth));
+        
+        function redirectToDashboard() {
+            window.location.href = '/';
+        }
+        
+        function showAuthData() {
+            document.getElementById('auth-data').textContent = JSON.stringify(driverAuth, null, 2);
+        }
+    </script>
+</head>
+<body>
+    <h1>Driver Authentication Test</h1>
+    <p>This page sets up driver authentication for testing the dashboard.</p>
+    
+    <button onclick="showAuthData()">Show Auth Data</button>
+    <button onclick="redirectToDashboard()">Go to Dashboard</button>
+    
+    <pre id="auth-data"></pre>
+    
+    <h2>Instructions:</h2>
+    <ol>
+        <li>Click "Show Auth Data" to see the authentication data</li>
+        <li>Click "Go to Dashboard" to navigate to the main dashboard</li>
+        <li>The dashboard should now display real data from the database</li>
+    </ol>
+</body>
+</html>

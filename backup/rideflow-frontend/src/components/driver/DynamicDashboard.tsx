@@ -79,7 +79,7 @@ export function DynamicDashboard({ config, pageType }: DynamicDashboardProps) {
           response = { data: null };
       }
       
-      setData(prev => ({ ...prev, [item.id]: response.data }));
+      setData(prev => ({ ...prev, [item.id]: response.data.data }));
     } catch (error) {
       console.error(`Failed to fetch data for ${item.id}:`, error);
       setData(prev => ({ ...prev, [item.id]: null }));
@@ -186,14 +186,14 @@ function StatsCard({ item, data }: { item: DashboardConfig; data: any }) {
   };
 
   const getValue = (title: string, data: any) => {
-    if (title.includes('Total Rides')) return data.TotalRides || 0;
-    if (title.includes('Completed Rides')) return data.CompletedRides || 0;
-    if (title.includes('Net Earnings')) return `PKR ${(data.NetEarnings || 0).toFixed(2)}`;
-    if (title.includes('Gross Earnings')) return `PKR ${(data.GrossEarnings || 0).toFixed(2)}`;
-    if (title.includes('Average Rating')) return `★ ${(data.AverageRating || 0).toFixed(1)}`;
-    if (title.includes('Completion Rate')) return `${(data.CompletionRate || 0).toFixed(1)}%`;
-    if (title.includes('Average Distance')) return `${(data.AverageDistance || 0).toFixed(1)} km`;
-    if (title.includes('Wallet Balance')) return `PKR ${(data.WalletBalance || 0).toFixed(2)}`;
+    if (title.includes('Total Rides')) return Number(data.TotalRides) || 0;
+    if (title.includes('Completed Rides')) return Number(data.CompletedRides) || 0;
+    if (title.includes('Net Earnings')) return `PKR ${Number(data.NetEarnings || 0).toFixed(2)}`;
+    if (title.includes('Gross Earnings')) return `PKR ${Number(data.GrossEarnings || 0).toFixed(2)}`;
+    if (title.includes('Average Rating')) return `★ ${Number(data.AverageRating || 0).toFixed(1)}`;
+    if (title.includes('Completion Rate')) return `${Number(data.CompletionRate || 0).toFixed(1)}%`;
+    if (title.includes('Average Distance')) return `${Number(data.AverageDistance || 0).toFixed(1)} km`;
+    if (title.includes('Wallet Balance')) return `PKR ${Number(data.WalletBalance || 0).toFixed(2)}`;
     return data.value || 'N/A';
   };
 
@@ -292,13 +292,17 @@ function MetricCard({ item, data }: { item: DashboardConfig; data: any }) {
         {Object.entries(data).slice(0, 4).map(([key, value]) => (
           <div key={key} className="text-center">
             <div className="text-2xl font-display text-text-primary">
-              {typeof value === 'number' ? 
-                (key.includes('Rate') || key.includes('Percentage')) ? `${value.toFixed(1)}%` :
-                (key.includes('Earnings') || key.includes('Balance') || key.includes('Fare')) ? `PKR ${value.toFixed(2)}` :
-                (key.includes('Distance')) ? `${value.toFixed(1)} km` :
-                (key.includes('Rating')) ? `★ ${value.toFixed(1)}` :
-                value.toFixed(0) :
-                String(value)}
+              {(() => {
+                const numValue = Number(value);
+                const keyLower = key.toLowerCase();
+                
+                if (keyLower.includes('rate') || keyLower.includes('percentage')) return `${numValue.toFixed(1)}%`;
+                if (keyLower.includes('earnings') || keyLower.includes('balance') || keyLower.includes('fare')) return `PKR ${numValue.toFixed(2)}`;
+                if (keyLower.includes('distance')) return `${numValue.toFixed(1)} km`;
+                if (keyLower.includes('rating')) return `★ ${numValue.toFixed(1)}`;
+                if (keyLower.includes('rides')) return numValue.toFixed(0);
+                return isNaN(numValue) ? String(value) : numValue.toFixed(0);
+              })()}
             </div>
             <div className="text-sm text-text-muted">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
           </div>
