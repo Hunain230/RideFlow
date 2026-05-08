@@ -6,7 +6,7 @@
 --   vw_DriverEarnings: INNER JOINs → LEFT JOINs + COALESCE
 --     (was excluding drivers with 0 completed rides)
 --   vw_ActiveRides: added LEFT JOIN for vehicle (nullable)
---   Fixed column name: DropoffLocationID (was DropoffLocationID)
+--   Fixed column names to match schema: DropoffLocationID
 -- =============================================================
 USE rideflow;
 
@@ -34,6 +34,7 @@ LEFT JOIN LOCATIONS l ON d.CurrentLocationID = l.LocationID   -- FIX: LEFT JOIN
 GROUP BY COALESCE(l.City,'Unknown'), u.UserID, d.DriverID
 ORDER BY COALESCE(l.City,'Unknown'), AvgRating DESC;
 
+
 -- ─────────────────────────────────────────────────────────────
 -- VIEW 2: vw_RevenueByCity (unchanged — was correct)
 -- ─────────────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ JOIN LOCATIONS l  ON ri.PickupLocationID = l.LocationID
 WHERE p.PaymentStatus = 'Paid'
 GROUP BY l.City, DATE(p.TransactionDate)
 ORDER BY l.City, RevenueDate DESC;
+
 
 -- ─────────────────────────────────────────────────────────────
 -- VIEW 3: vw_DriverEarnings
@@ -75,6 +77,7 @@ LEFT JOIN RIDES    ri ON ri.DriverID = d.DriverID AND ri.RideStatus = 'Completed
 LEFT JOIN PAYMENTS p  ON p.RideID   = ri.RideID   AND p.PaymentStatus = 'Paid'     -- FIX
 GROUP BY d.DriverID, u.FirstName, u.LastName, d.CommissionRate, d.WalletBalance;
 
+
 -- ─────────────────────────────────────────────────────────────
 -- VIEW 4: vw_RevenueByPaymentMethod (unchanged)
 -- ─────────────────────────────────────────────────────────────
@@ -91,6 +94,7 @@ FROM PAYMENTS
 WHERE PaymentStatus = 'Paid'
 GROUP BY PaymentMethod
 ORDER BY TotalAmount DESC;
+
 
 -- ─────────────────────────────────────────────────────────────
 -- VIEW 5: vw_ActiveRides

@@ -1,5 +1,0 @@
--- =============================================================
--- DEPRECATED: This file has been consolidated into 02_schema.sql
--- All tables, indexes, and triggers are now defined in the main schema file.
--- Run 02_schema.sql to create the complete database schema.
--- =============================================================
