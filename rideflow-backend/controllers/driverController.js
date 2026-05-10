@@ -179,8 +179,8 @@ const removeVehicle = asyncHandler(async (req, res) => {
 const getIncomingRides = asyncHandler(async (req, res) => {
   const [rows] = await db.query(
     `SELECT r.RideID, CONCAT(u.FirstName,' ',u.LastName) AS RiderName,
-            pl.City AS PickupCity, pl.Street AS PickupStreet,
-            dl.City AS DropoffCity, r.Fare,
+            pl.LocationName AS PickupLocation, pl.City AS PickupCity, pl.Street AS PickupStreet,
+            dl.LocationName AS DropoffLocation, dl.City AS DropoffCity, r.Fare,
             r.ScheduledTime, r.SurgeMultiplier
      FROM RIDES r
      JOIN USERS u ON r.CustomerID = u.UserID
@@ -212,8 +212,8 @@ const createRideRequest = asyncHandler(async (req, res) => {
   // Get ride details for broadcasting
   const [rideDetails] = await db.query(
     `SELECT r.*, CONCAT(u.FirstName,' ',u.LastName) AS CustomerName,
-            pl.City AS PickupCity, pl.Street AS PickupStreet,
-            dl.City AS DropoffCity
+            pl.LocationName AS PickupLocation, pl.City AS PickupCity, pl.Street AS PickupStreet,
+            dl.LocationName AS DropoffLocation, dl.City AS DropoffCity
      FROM RIDES r
      JOIN USERS u ON r.CustomerID = u.UserID
      JOIN LOCATIONS pl ON r.PickupLocationID = pl.LocationID
@@ -473,7 +473,8 @@ const getMyRides = asyncHandler(async (req, res) => {
     'SELECT DriverID FROM DRIVERS WHERE UserID = ?', [req.user.userID]);
   let sql = `
     SELECT r.RideID, CONCAT(u.FirstName,' ',u.LastName) AS RiderName,
-           pl.City AS PickupCity, dl.City AS DropoffCity,
+           pl.LocationName AS PickupLocation, pl.City AS PickupCity,
+           dl.LocationName AS DropoffLocation, dl.City AS DropoffCity,
            r.Fare, r.Distance, r.RideStatus, r.StartTime, r.EndTime
     FROM RIDES r
     JOIN USERS u ON r.CustomerID = u.UserID

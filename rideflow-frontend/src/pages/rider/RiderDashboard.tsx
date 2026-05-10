@@ -764,7 +764,7 @@ function TripsTab() {
                     <Badge variant={r.RideStatus === 'Completed' ? 'success' : r.RideStatus === 'Cancelled' ? 'error' : r.RideStatus === 'InProgress' ? 'warning' : 'info'}>{r.RideStatus}</Badge>
                   </div>
                   <p className="text-sm text-text-muted">{new Date(r.StartTime || r.ScheduledTime).toLocaleDateString()} • PKR {r.Fare}</p>
-                  <p className="text-xs text-text-muted">{r.PickupCity} → {r.DropoffCity}</p>
+                  <p className="text-xs text-text-muted">{r.PickupLocation || r.PickupCity} → {r.DropoffLocation || r.DropoffCity}</p>
                   {r.DriverName && <p className="text-xs text-text-muted">Driver: {r.DriverName}</p>}
                 </div>
               </div>

@@ -321,7 +321,7 @@ function RidesTab({ incomingRides, myRides, onAcceptRide, onRejectRide, onStartR
                   <div>
                     <p className="text-white font-medium">{ride.RiderName}</p>
                     <p className="text-text-muted text-sm">
-                      {ride.PickupCity} → {ride.DropoffCity}
+                      {ride.PickupLocation || ride.PickupCity} → {ride.DropoffLocation || ride.DropoffCity}
                     </p>
                   </div>
                   <div className="text-right">
@@ -361,7 +361,7 @@ function RidesTab({ incomingRides, myRides, onAcceptRide, onRejectRide, onStartR
                 <div>
                   <p className="text-white font-medium">{ride.RiderName}</p>
                   <p className="text-text-muted text-sm">
-                    {ride.PickupCity} → {ride.DropoffCity}
+                    {ride.PickupLocation || ride.PickupCity} → {ride.DropoffLocation || ride.DropoffCity}
                   </p>
                   <Badge variant={ride.RideStatus === 'Completed' ? 'success' : ride.RideStatus === 'InProgress' ? 'warning' : 'secondary'}>
                     {ride.RideStatus}

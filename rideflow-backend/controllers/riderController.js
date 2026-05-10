@@ -272,8 +272,8 @@ const requestRide = asyncHandler(async (req, res) => {
 const getRideHistory = asyncHandler(async (req, res) => {
   const { status } = req.query;
   let sql = `
-    SELECT r.RideID, pl.City AS PickupCity, pl.Street AS PickupStreet,
-           dl.City AS DropoffCity, dl.Street AS DropoffStreet,
+    SELECT r.RideID, pl.LocationName AS PickupLocation, pl.City AS PickupCity, pl.Street AS PickupStreet,
+           dl.LocationName AS DropoffLocation, dl.City AS DropoffCity, dl.Street AS DropoffStreet,
            r.RideStatus, r.Fare, r.Distance, r.StartTime, r.EndTime,
            r.SurgeMultiplier, r.ScheduledTime,
            CONCAT(u.FirstName,' ',u.LastName) AS DriverName
@@ -293,8 +293,8 @@ const getRideHistory = asyncHandler(async (req, res) => {
 // GET /api/rider/rides/:id
 const getRideDetail = asyncHandler(async (req, res) => {
   const [rows] = await db.query(
-    `SELECT r.*, pl.City AS PickupCity, dl.City AS DropoffCity,
-            pl.Street AS PickupStreet, dl.Street AS DropoffStreet
+    `SELECT r.*, pl.LocationName AS PickupLocation, pl.City AS PickupCity,
+            pl.Street AS PickupStreet, dl.LocationName AS DropoffLocation, dl.City AS DropoffCity, dl.Street AS DropoffStreet
      FROM RIDES r
      JOIN LOCATIONS pl ON r.PickupLocationID  = pl.LocationID
      JOIN LOCATIONS dl ON r.DropoffLocationID = dl.LocationID
