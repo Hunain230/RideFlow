@@ -16,9 +16,11 @@ import { SafetyPanel } from '../../components/safety/SafetyPanel';
 import { fadeSlideUp } from '../../motion/presets';
 import { NotificationCenter } from '../../components/customer/NotificationCenter';
 import { LocationSearch } from '../../components/ui/LocationSearch';
+import { RatingModal } from '../../components/rider/RatingModal';
 
 export function CustomerDashboard() {
   const [activeTab, setActiveTab] = useState('book');
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const navItems = [
     { id: 'book', label: 'Book a Ride', icon: <Navigation size={20} /> },
@@ -47,7 +49,7 @@ export function CustomerDashboard() {
             exit="exit"
             className="h-full"
           >
-            {activeTab === 'book' && <BookTab />}
+            {activeTab === 'book' && <BookTab showRatingModal={showRatingModal} setShowRatingModal={setShowRatingModal} />}
             {activeTab === 'trips' && <TripsTab />}
             {activeTab === 'profile' && <ProfileTab />}
           </motion.div>
@@ -57,7 +59,7 @@ export function CustomerDashboard() {
   );
 }
 
-function BookTab() {
+function BookTab({ showRatingModal, setShowRatingModal }: { showRatingModal: boolean; setShowRatingModal: (value: boolean) => void }) {
   const [step, setStep] = useState(1);
   const [locations, setLocations] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -820,8 +822,34 @@ function BookTab() {
         <GlassCard tier={3} className="max-w-md mx-auto p-8 text-center mt-12 border-success">
           <h3 className="text-2xl font-display mb-2 text-success">Ride {rideState.RideStatus}!</h3>
           <p className="text-text-muted mb-6">Thank you for riding with RideFlow.</p>
-          <Button className="w-full" onClick={() => { setStep(1); setRideState(null); setActiveRideId(null); }}>Book Another Ride</Button>
+          <div className="flex gap-3">
+            <Button variant="glass" className="flex-1" onClick={() => { setStep(1); setRideState(null); setActiveRideId(null); }}>Book Another Ride</Button>
+            <Button className="flex-1" onClick={() => setShowRatingModal(true)}>Rate Driver</Button>
+          </div>
         </GlassCard>
+      )}
+
+      {/* Rating Modal */}
+      {showRatingModal && rideState && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          rideId={activeRideId || 0}
+          driverName={rideState.DriverName || 'Driver'}
+          onSubmit={(rating) => {
+            riderAPI.rateRide(activeRideId || 0, rating);
+            setShowRatingModal(false);
+            toast.success('Thank you for rating your driver!');
+          }}
+          onComplaint={(complaint) => {
+            riderAPI.fileComplaint({
+              rideID: activeRideId || 0,
+              description: `${complaint.type}: ${complaint.description}`
+            });
+            setShowRatingModal(false);
+            toast.success('Complaint filed successfully!');
+          }}
+        />
       )}
     </div>
   );

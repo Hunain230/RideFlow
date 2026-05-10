@@ -75,9 +75,8 @@ export function RiderDashboard() {
                 }}
                 onComplaint={(complaint) => {
                   riderAPI.fileComplaint({
-                    rideId: completedRideId || 0,
-                    complaintType: complaint.type,
-                    description: complaint.description
+                    rideID: completedRideId || 0,
+                    description: `${complaint.type}: ${complaint.description}`
                   });
                   setRatingModalShown(false);
                   toast.success('Complaint filed successfully!');
