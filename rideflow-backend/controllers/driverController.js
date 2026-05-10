@@ -405,11 +405,14 @@ const completeRide = asyncHandler(async (req, res) => {
 
   // Complete the ride
   const [result] = await db.query(
-    `UPDATE RIDES SET RideStatus = 'Completed', EndTime = NOW(),
-     Distance = ?, Fare = ?
+    `UPDATE RIDES SET RideStatus = 'Completed', EndTime = NOW()
      WHERE RideID = ? AND DriverID = ? AND RideStatus = 'InProgress'`,
-    [finalDistance, finalFare, req.params.id, driver.DriverID]
+    [req.params.id, driver.DriverID]
   );
+
+  // Calculate final fare using stored procedure
+  const [[fareResult]] = await db.query('CALL CalculateFare(?)', [req.params.id]);
+  const calculatedFare = fareResult[0]?.Result?.match(/PKR ([\d.]+)/)?.[1] || finalFare;
 
   if (!result.affectedRows) {
     return sendError(res, 'Cannot complete — ride not found or wrong status.');
@@ -417,8 +420,8 @@ const completeRide = asyncHandler(async (req, res) => {
 
   // Create payment record
   const commissionRate = driver.CommissionRate || 10.00;
-  const platformCommission = (finalFare * commissionRate) / 100;
-  const driverEarnings = finalFare - platformCommission;
+  const platformCommission = (calculatedFare * commissionRate) / 100;
+  const driverEarnings = calculatedFare - platformCommission;
 
   try {
     // Check if payment already exists (from triggers)
@@ -432,7 +435,7 @@ const completeRide = asyncHandler(async (req, res) => {
       await db.query(
         `INSERT INTO PAYMENTS (RideID, CustomerID, Amount, PaymentMethod, PaymentStatus)
          VALUES (?, ?, ?, ?, 'Pending')`,
-        [req.params.id, ride.CustomerID, finalFare, payMethod]
+        [req.params.id, ride.CustomerID, calculatedFare, payMethod]
       );
     }
 
@@ -460,9 +463,9 @@ const completeRide = asyncHandler(async (req, res) => {
     rideID: req.params.id,
     rideStatus: 'Completed',
     endTime: new Date(),
-    totalFare: finalFare,
-    driverEarnings: finalFare - ((finalFare * (driver.CommissionRate || 10)) / 100),
-    platformCommission: (finalFare * (driver.CommissionRate || 10)) / 100
+    totalFare: calculatedFare,
+    driverEarnings: calculatedFare - ((calculatedFare * (driver.CommissionRate || 10)) / 100),
+    platformCommission: (calculatedFare * (driver.CommissionRate || 10)) / 100
   }, 'Ride completed. You are now Online again.');
 });
 
